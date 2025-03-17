@@ -240,6 +240,9 @@ ApiRes provides a consistent structure for API responses. It includes several st
 ```typescript
 import {ApiRes} from 'exutile';
 
+// Example without async-handler
+app.get('/hello', (req, res) => new ApiRes.ok({}, 'Hello World').toJson(res));
+
 // With paginated
 const list = handler(async req => {
   const {data, meta} = await getUsers(req.query);
@@ -247,27 +250,33 @@ const list = handler(async req => {
 });
 
 // With created
-const create = handler(async req => {
-  const user = await createUser(req.body);
-  return ApiRes.created(user, 'User created successfully');
-});
+const create = handler(async req =>
+  ApiRes.created(await createUser(req.body), 'User created successfully');
+);
 
 // With ok
-const get = handler(async req => {
-  const user = await getUser(req.params);
-  return ApiRes.ok(user, 'Get user successfully');
-});
+const get = handler(async req =>
+  ApiRes.ok(await getUser(req.params), 'Get user successfully');
+);
 
 // Routers
 app.route('/').get(list).post(create);
 app.route('/:id').get(get);
 ```
 
-### ApiRes Methods
+### ApiRes `Static` Methods
 
 - `ok(result, message)`: Returns a success response (HTTP 200).
 - `created(result, message)`: Returns a resource creation response (HTTP 201).
 - `paginated(data, meta, message)`: Returns a success response (HTTP 200).
+
+### `ApiRes.toJson(res: Response): void` Method:
+
+Send `HTTP` json Response.
+
+```typescript
+new ApiRes({}, 'Hello World').toJson(res);
+```
 
 ## HttpError ❌
 
@@ -280,7 +289,7 @@ import {HttpError, HttpStatus} from 'exutile';
 
 // Example without async-handler
 app.get('*', () => {
-  throw new HttpError('Not Found', HttpStatus.NOT_FOUND); // Throw a 404 error
+  new HttpError('Not Found', HttpStatus.NOT_FOUND).toJson(res); // Throw a 404 error
 });
 
 // Example with async-handler
@@ -324,12 +333,10 @@ The `HttpError.isHttpError(value)` method determines if a specific value is an i
 
 ```typescript
 // If it is an HttpError, send a JSON response with the error details
-if (HttpError.isHttpError(err))
-  return res.status(err.status).json(err.toJson());
-else {
+if (HttpError.isHttpError(err)) return err.toJson(res);
+else
   // If it's not an HttpError, pass it to the next middleware for further handling
   next(err);
-}
 ```
 
 ### Error Properties:
@@ -344,30 +351,32 @@ else {
 ```typescript
 export const errorHandler: ErrorRequestHandler = (err, req, res, next): any => {
   // Handle known HttpError instances
-  if (HttpError.isHttpError(err))
-    return res.status(err.status).json(err.toJson());
-
+  if (HttpError.isHttpError(err)) return err.toJson(res);
   // Log unknown errors
   console.error(err);
-
   // Create an InternalServerError for unknown errors
-  const error = new InternalServerError(
+  return new InternalServerError(
     config.dev ? err.message : 'Something went wrong',
     config.dev ? err.stack : null,
-  );
-  return res.status(error.status).json(error.toJson());
+  ).toJson(res);
 };
 ```
 
-### `error.toJson()` Method:
+### `error.toJson(res: Response): void` Method:
+
+Send `HTTP` json Response.
+
+```typescript
+new HttpError('Hello World').toJson(res);
+```
+
+### `error.getBody(): HttpErrorBody` Method:
 
 Converts an `HttpError` instance into a structured JSON format.
 
 ```typescript
-return res.status(err.status).json(err.toJson());
+const body = new HttpError('Hello World').getBody();
 ```
-
-> _Note: **details** if applicable then additional information that provides context about the error._
 
 ## HttpStatus ✅
 

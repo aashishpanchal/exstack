@@ -25,24 +25,17 @@ import {HttpError, InternalServerError} from './errors';
  *  write: error => console.error(error)
  * }));
  */
-export const globalErrorHandler = (
-  options: ErrorOptions = {},
-): ErrorRequestHandler => {
+export const globalErrorHandler = (options: ErrorOptions = {}): ErrorRequestHandler => {
   const {isDev = true, write = undefined} = options;
-
-  return (err, req, res, next): any => {
+  return (err, req, res, next) => {
     // Handle known HttpError instances
-    if (HttpError.isHttpError(err))
-      return res.status(err.status).json(err.toJson());
-
+    if (HttpError.isHttpError(err)) return err.toJson(res);
     // Write unknown errors if a write function is provided
     write?.(err);
-
     // Create an InternalServerError for unknown errors
-    const error = new InternalServerError(
+    return new InternalServerError(
       isDev ? err.message : 'Something went wrong',
       isDev ? err.stack : null,
-    );
-    return res.status(error.status).json(error.toJson());
+    ).toJson(res);
   };
 };

@@ -1,12 +1,6 @@
 import {ApiRes} from './api-res';
 import type {RequestHandler, Response} from 'express';
-import type {
-  Handler,
-  ReqHandler,
-  Constructor,
-  ProxyWrapper,
-  WrappedMethods,
-} from './types';
+import type {Handler, ReqHandler, Constructor, ProxyWrapper, WrappedMethods} from './types';
 
 /**
  * Processes the result of a route handler and sends the appropriate response.
@@ -17,7 +11,7 @@ import type {
 const handleResult = (result: unknown, res: Response): void => {
   if (result instanceof ApiRes) {
     // Send status and JSON if result is ApiRes
-    res.status(result.status).json(result.toJson());
+    result.toJson(res);
   } else if (result && result !== res) {
     // Send non-ApiRes result directly
     res.send(result);
@@ -32,10 +26,13 @@ const handleResult = (result: unknown, res: Response): void => {
  *
  * @example
  * // without type
- * app.get('/example', handler(async (req, res) => await fetchData()));
- * // with type
- * type ExampleHandler = Handler<{name: string}>
- * app.get('/example', handler<ExampleHandler>(async (req, res) => await fetchData(req.body.name)));
+ * app.get('/example', handler(async () => await fetchData()));
+ * // with body type
+ * app.get('/example', handler<Handler<{name: string}>>(async req => await fetchData(req.body.name)));
+ * // with param type
+ * app.get('/example', handler<Handler<any, {name: string}>>(async req => await fetchData(req.param.name)));
+ * // with query type
+ * app.get('/example', handler<Handler<any, any, {name: string}>>(async req => await fetchData(req.query.name)));
  */
 export const handler =
   <T extends Handler<any, any, any>>(
@@ -56,16 +53,27 @@ export const handler =
     }
   };
 
-// Overload signatures
+/**
+ * @param clsOrInstance - The class constructor or an instance of the class.
+ * @param args - The arguments for the class constructor.
+ * @returns A proxied instance where all methods are wrapped with `async-handler`.
+ *
+ * @example
+ * class MyClass {
+ *   async myMethod() {
+ *     return 'Hello, World!';
+ *   }
+ * }
+ * const instance = proxyWrapper(MyClass);
+ *
+ * app.get("/", instance.myMethod)
+ */
 export const proxyWrapper: ProxyWrapper = <T extends object>(
   clsOrInstance: Constructor<T> | T,
   ...args: ConstructorParameters<Constructor<T>> | []
 ): WrappedMethods<T> => {
   // Create an instance if clsOrInstance is a constructor
-  const instance =
-    typeof clsOrInstance === 'function'
-      ? new clsOrInstance(...args)
-      : clsOrInstance;
+  const instance = typeof clsOrInstance === 'function' ? new clsOrInstance(...args) : clsOrInstance;
 
   return new Proxy(instance, {
     get(target, prop, receiver) {

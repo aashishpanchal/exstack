@@ -1,12 +1,20 @@
+import type {Response} from 'express';
 import {HttpStatus} from './enums';
-import type {BodyMessage, HttpErrorBody, HttpStatusNumber} from './types';
+import type {
+  BodyMessage,
+  HttpErrorBody,
+  ClientErrorStatusCode,
+  ServerErrorStatusCode,
+} from './types';
+
+type StatusCode = ServerErrorStatusCode | ClientErrorStatusCode;
 
 /**
  * Get a human-readable error name from the HTTP status code.
  * @param {number} status - The HTTP status code.
  * @returns {string} - The formatted error name.
  */
-export const getErrorName = (status: HttpStatusNumber): string => {
+export const getErrorName = (status: StatusCode): string => {
   if (status < 400 || status > 511) return 'HttpError';
   // Find the key corresponding to the given status code
   const statusKey = HttpStatus[`${status}_NAME`];
@@ -32,7 +40,7 @@ export class HttpError extends Error {
    */
   constructor(
     readonly msg: BodyMessage,
-    readonly status: HttpStatusNumber = HttpStatus.INTERNAL_SERVER_ERROR,
+    readonly status: StatusCode = HttpStatus.INTERNAL_SERVER_ERROR,
     readonly detail?: object,
   ) {
     super();
@@ -42,26 +50,36 @@ export class HttpError extends Error {
   }
 
   /**
-   * Convert the HttpError instance to a JSON object.
+   * Convert the HttpError instance to a Body object.
    * @returns {HttpErrorBody} - The JSON representation of the error.
    */
-  public toJson(): HttpErrorBody {
+  public getBody = (): HttpErrorBody => {
     const obj: HttpErrorBody = {
-      status: this.status,
       error: this.name,
+      status: this.status,
       message: this.msg,
     };
     if (this.detail) obj['detail'] = this.detail;
     return obj;
-  }
+  };
+
+  /**
+   * Send the json of the error in an HTTP response.
+   * @param {Response} res - The Express response object.
+   *
+   * @example
+   * new HttpError('Not Found', 404).toJson(res);
+   */
+  public toJson = (res: Response): void => {
+    res.status(this.status).json(this.getBody());
+  };
 
   /**
    * Check if the given error is an instance of HttpError.
    * @param {unknown} value - The error to check.
    * @returns {boolean} - True if the error is an instance of HttpError, false otherwise.
    */
-  public static isHttpError = (value: unknown): value is HttpError =>
-    value instanceof HttpError;
+  public static isHttpError = (value: unknown): value is HttpError => value instanceof HttpError;
 }
 
 /**

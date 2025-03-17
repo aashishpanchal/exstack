@@ -8,7 +8,20 @@ export type ValueOf<T> = T[keyof T];
 export type NumberOf<K> = Extract<K, number>;
 
 // Define a type for HttpStatus that only includes number values
-export type HttpStatusNumber = NumberOf<ValueOf<typeof HttpStatus>>;
+export type HttpStatusCode = NumberOf<ValueOf<typeof HttpStatus>>;
+
+/**
+ * @module
+ * HTTP Status utility.
+ */
+export type InfoStatusCode = 100 | 101 | 102 | 103;
+export type SuccessStatusCode = 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 226;
+export type RedirectStatusCode = 300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308;
+export type ServerErrorStatusCode = 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511;
+export type ClientErrorStatusCode = Exclude<
+  HttpStatusCode,
+  ServerErrorStatusCode | RedirectStatusCode | SuccessStatusCode | InfoStatusCode
+>;
 
 // Define the type for the body message of HTTP errors
 export type BodyMessage = string | string[];
