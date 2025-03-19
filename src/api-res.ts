@@ -1,16 +1,11 @@
 import {Response} from 'express';
 import {HttpStatus} from './enums';
-import type {
-  HttpStatusCode,
-  RedirectStatusCode,
-  ClientErrorStatusCode,
-  ServerErrorStatusCode,
-} from './types';
+import type {HttpStatusCode, RedirectStatusCode, ClientErrorStatusCode, ServerErrorStatusCode} from './types';
 
-type StatusCode = Exclude<
-  HttpStatusCode,
-  ClientErrorStatusCode | ServerErrorStatusCode | RedirectStatusCode
->;
+/** The structure of the HTTP response body. */
+export type HttpResBody = {result: any; status: number; message: string};
+// Define the type for the status code of HTTP success response
+type StatusCode = Exclude<HttpStatusCode, ClientErrorStatusCode | ServerErrorStatusCode | RedirectStatusCode>;
 
 /**
  * ApiRes class for standardizing API responses
@@ -19,7 +14,7 @@ export class ApiRes {
   /**
    * Creates an instance of ApiRes.
    * @param {any} result - The result of the operation
-   * @param {number} status - The HTTP status code
+   * @param {StatusCode} status - The HTTP status code
    * @param {string} message - The response message
    */
   constructor(
@@ -32,7 +27,7 @@ export class ApiRes {
    * Returns the Body (JSON) representation of the response.
    * @returns The Body (JSON) representation of the response
    */
-  public getBody = () => ({
+  public getBody = (): HttpResBody => ({
     status: this.status,
     message: this.message,
     result: this.result,
@@ -74,9 +69,6 @@ export class ApiRes {
    * @param {string} [message='Data retrieved successfully'] - The response message
    * @returns {ApiRes} An ApiRes instance with OK status and paginated data
    */
-  static paginated = (
-    data: any,
-    meta: object,
-    message: string = 'Data retrieved successfully',
-  ): ApiRes => new ApiRes({...meta, data}, HttpStatus.OK, message);
+  static paginated = (data: any, meta: object, message: string = 'Data retrieved successfully'): ApiRes =>
+    new ApiRes({...meta, data}, HttpStatus.OK, message);
 }

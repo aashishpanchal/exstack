@@ -14,46 +14,35 @@ export type HttpStatusCode = NumberOf<ValueOf<typeof HttpStatus>>;
  * @module
  * HTTP Status utility.
  */
-export type InfoStatusCode = 100 | 101 | 102 | 103;
-export type SuccessStatusCode = 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 226;
+export type SuccessStatusCode = 100 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 226;
 export type RedirectStatusCode = 300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308;
 export type ServerErrorStatusCode = 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511;
 export type ClientErrorStatusCode = Exclude<
   HttpStatusCode,
-  ServerErrorStatusCode | RedirectStatusCode | SuccessStatusCode | InfoStatusCode
+  ServerErrorStatusCode | RedirectStatusCode | SuccessStatusCode
 >;
 
-// Define the type for the body message of HTTP errors
-export type BodyMessage = string | string[];
-
-// Define the structure of the HTTP error body
-export interface HttpErrorBody {
-  error: string; // Error message
-  detail?: any; // Optional detailed information about the error
-  status: number; // HTTP status code
-  message: BodyMessage; // Message describing the error
-}
-
-// Define the structure of the HTTP response body
-export interface HttpResBody {
-  status: number; // HTTP status code
-  message: string; // Response message
-  result: any; // The result of the request
-}
-
-// Define a reusable type for handler props
-export type Handler<B = unknown, P = unknown, Q = unknown> = {
-  body: B;
-  param: P;
-  query: Q;
-};
-
-// Define the type for request handler functions
-export type ReqHandler<B = any, P = any, Q = any> = (
-  req: Request<P, any, B, Q>,
-  res: Response,
+/**
+ * A generic type for request handler functions in an Express application.
+ *
+ * @example
+ * // Example usage for a login handler
+ * type LoginHandler = Handler<{ username: string; password: string }>;
+ */
+export type Handler<TBody = any, TParam = any, TQuery = any, TResBody = any> = (
+  req: Request<TParam, TResBody, TBody, TQuery>,
+  res: Response<TResBody>,
   next: NextFunction,
 ) => any | Promise<any>;
+
+/**
+ * A generic type for input validation schemas.
+ *
+ * @example
+ * // Example usage for a login input schema
+ * type LoginInput = InputType<{ username: string; password: string }>;
+ */
+export type InputType<TBody = any, TParam = any, TQuery = any> = {body: TBody; query: TParam; param: TQuery};
 
 // Define a constructor type for classes
 export type Constructor<T> = new (...args: any[]) => T;
@@ -63,73 +52,4 @@ export type WrappedMethods<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any
     ? RequestHandler // If the method is a function, wrap it with ReqHandler
     : T[K]; // Otherwise, keep the original type
-};
-
-// Define the ProxyWrapper type
-export type ProxyWrapper = {
-  /**
-   * Wraps a class constructor in a Proxy, allowing all methods to be
-   * automatically wrapped with `asyncHandler`.
-   *
-   * @param clsOrInstance - The class constructor.
-   * @returns A proxied instance where all methods are wrapped with `asyncHandler`.
-   *
-   * @example
-   * class MyClass {
-   *   async myMethod() {
-   *     return 'Hello, World!';
-   *   }
-   * }
-   * const proxiedInstance = proxyWrapper(MyClass);
-   * await proxiedInstance.myMethod(); // Automatically wrapped with asyncHandler
-   */
-  <T extends object>(clsOrInstance: Constructor<T>): WrappedMethods<T>;
-
-  /**
-   * Wraps an instance of a class in a Proxy, allowing all methods to be
-   * automatically wrapped with `asyncHandler`.
-   *
-   * @param clsOrInstance - An instance of the class.
-   * @returns A proxied instance where all methods are wrapped with `asyncHandler`.
-   *
-   * @example
-   * class MyClass {
-   *   async myMethod() {
-   *     return 'Hello, World!';
-   *   }
-   * }
-   * const instance = new MyClass();
-   * const proxiedInstance = proxyWrapper(instance);
-   * await proxiedInstance.myMethod(); // Automatically wrapped with asyncHandler
-   */
-  <T extends object>(clsOrInstance: T): WrappedMethods<T>;
-
-  /**
-   * Wraps a class constructor in a Proxy, allowing all methods to be
-   * automatically wrapped with `asyncHandler`, with constructor arguments.
-   *
-   * @param clsOrInstance - The class constructor.
-   * @param args - The arguments for the class constructor.
-   * @returns A proxied instance where all methods are wrapped with `asyncHandler`.
-   *
-   * @example
-   * class MyClass {
-   *   constructor(private name: string) {}
-   *   async greet() {
-   *     return `Hello, ${this.name}!`;
-   *   }
-   * }
-   * const proxiedInstance = proxyWrapper(MyClass, 'Alice');
-   * await proxiedInstance.greet(); // Automatically wrapped with asyncHandler
-   */
-  <T extends object>(
-    clsOrInstance: Constructor<T>,
-    ...args: ConstructorParameters<Constructor<T>>
-  ): WrappedMethods<T>;
-};
-
-// Define the ErrorOption type
-export type ErrorOptions = {
-  isDev?: boolean;
-  write?: (error: unknown) => void;
 };

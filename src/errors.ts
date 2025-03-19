@@ -1,12 +1,12 @@
-import type {Response} from 'express';
 import {HttpStatus} from './enums';
-import type {
-  BodyMessage,
-  HttpErrorBody,
-  ClientErrorStatusCode,
-  ServerErrorStatusCode,
-} from './types';
+import type {Response} from 'express';
+import type {ClientErrorStatusCode, ServerErrorStatusCode} from './types';
 
+/** The type for the body message of HTTP errors. */
+export type Message = string | string[];
+/** The structure of the HTTP error body. */
+export type HttpErrorBody = {detail?: any; error: string; status: number; message: Message};
+// Define the type for the status code of HTTP errors
 type StatusCode = ServerErrorStatusCode | ClientErrorStatusCode;
 
 /**
@@ -34,12 +34,12 @@ export const getErrorName = (status: StatusCode): string => {
  */
 export class HttpError extends Error {
   /**
-   * @param {BodyMessage} msg - The error message.
-   * @param {number} status - The HTTP status code. default is 500 (Internal Server Error).
+   * @param {Message} msg - The error message.
+   * @param {StatusCode} status - The HTTP status code. default is 500 (Internal Server Error).
    * @param {any} [detail] - Optional detailed error information.
    */
   constructor(
-    readonly msg: BodyMessage,
+    readonly msg: Message,
     readonly status: StatusCode = HttpStatus.INTERNAL_SERVER_ERROR,
     readonly detail?: object,
   ) {
@@ -51,14 +51,10 @@ export class HttpError extends Error {
 
   /**
    * Convert the HttpError instance to a Body object.
-   * @returns {HttpErrorBody} - The JSON representation of the error.
+   * @returns {HttpBody} - The JSON representation of the error.
    */
   public getBody = (): HttpErrorBody => {
-    const obj: HttpErrorBody = {
-      error: this.name,
-      status: this.status,
-      message: this.msg,
-    };
+    const obj: HttpErrorBody = {error: this.name, status: this.status, message: this.msg};
     if (this.detail) obj['detail'] = this.detail;
     return obj;
   };
@@ -87,7 +83,7 @@ export class HttpError extends Error {
  * @extends {HttpError}
  */
 export class BadRequestError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.BAD_REQUEST, detail);
   }
 }
@@ -97,7 +93,7 @@ export class BadRequestError extends HttpError {
  * @extends {HttpError}
  */
 export class ConflictError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.CONFLICT, detail);
   }
 }
@@ -107,7 +103,7 @@ export class ConflictError extends HttpError {
  * @extends {HttpError}
  */
 export class ForbiddenError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.FORBIDDEN, detail);
   }
 }
@@ -117,7 +113,7 @@ export class ForbiddenError extends HttpError {
  * @extends {HttpError}
  */
 export class NotFoundError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.NOT_FOUND, detail);
   }
 }
@@ -127,7 +123,7 @@ export class NotFoundError extends HttpError {
  * @extends {HttpError}
  */
 export class UnAuthorizedError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.UNAUTHORIZED, detail);
   }
 }
@@ -137,7 +133,7 @@ export class UnAuthorizedError extends HttpError {
  * @extends {HttpError}
  */
 export class NotImplementedError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.NOT_IMPLEMENTED, detail);
   }
 }
@@ -147,7 +143,7 @@ export class NotImplementedError extends HttpError {
  * @extends {HttpError}
  */
 export class PaymentRequiredError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.PAYMENT_REQUIRED, detail);
   }
 }
@@ -157,7 +153,7 @@ export class PaymentRequiredError extends HttpError {
  * @extends {HttpError}
  */
 export class InternalServerError extends HttpError {
-  constructor(message: BodyMessage, detail?: object) {
+  constructor(message: Message, detail?: object) {
     super(message, HttpStatus.INTERNAL_SERVER_ERROR, detail);
   }
 }

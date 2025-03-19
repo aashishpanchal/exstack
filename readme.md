@@ -16,9 +16,10 @@
 - [Quick Start](#quick-start-)
 - [`globalErrorHandler`: Error Handler Middleware](#globalerrorhandler-error-handler-middleware-)
 - [`async-handler`: Simplifying Controllers](#async-handler-simplifying-controllers-️)
-- [Standardized JSON Responses with ApiRes](#standardized-json-responses-with-apires-)
-- [HttpError](#httperror-)
-- [HttpStatus](#httpstatus-)
+- [Standardized JSON Responses with `ApiRes`](#standardized-json-responses-with-apires-)
+- [Standardized `HttpError`](#httperror-)
+- [Standardized `HttpStatus`](#httpstatus-)
+- [Permission `makePermission` function](#permission-makepermission-function)
 - [`proxyWrapper`: Class Controllers](#proxywrapper-class-controllers-️)
 - [Conclusion](#conclusion-)
 - [Contributing](#contributing-)
@@ -146,10 +147,10 @@ app.get(
 import {handler, Handler} from 'exutile';
 
 // Login type handler
-type LoginHandler = Handler<{email: string; password: string}>;
+type LoginInput = InputType<{email: string; password: string}>;
 
 // Login request handler
-const login = handler<LoginHandler>(async (req, res) => {
+const login = handler<LoginInput>(async (req, res) => {
   const {email, password} = req.body;
   const user = await loginUser(email, password);
 
@@ -221,8 +222,7 @@ export const permission = (...roles: Role[]) =>
   handler(async (req, _, next) => {
     const {user} = req;
 
-    if (!roles.includes(user?.role))
-      throw new ForbiddenError(`Access denied for ${req.originalUrl}`);
+    if (!roles.includes(user?.role)) throw new ForbiddenError(`Access denied for ${req.originalUrl}`);
 
     next();
   });
@@ -447,6 +447,23 @@ const statusName = HttpStatus.NAMES.$200; // 'OK'
   - `HttpStatus.NOT_IMPLEMENTED`: 501 — Not implemented.
   - `HttpStatus.SERVICE_UNAVAILABLE`: 503 — Service unavailable.
   - and more ....
+
+## Permission `makePermission` function
+
+Generates a permission object mapping `subjects` and `actions` to permission strings.
+
+```ts
+/** Server Permissions */
+const Permissions = makePermission({
+  actions: ['create', 'read', 'update', 'delete'] as const,
+  subjects: ['user', 'blog', 'comment'] as const,
+  filter: {
+    user: ['read'], // user only map read
+  },
+});
+
+console.log(Permission.USER_READ); // user:read
+```
 
 ## `proxyWrapper`: Class Controllers 🏗️
 
