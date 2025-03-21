@@ -27,13 +27,13 @@ export type ClientErrorStatusCode = Exclude<
  *
  * @example
  * // Example usage for a login handler
- * type LoginHandler = Handler<{ username: string; password: string }>;
+ * type LoginHandler = Handler<InputType<{ username: string; password: string }>>;
  */
-export type Handler<TBody = any, TParam = any, TQuery = any, TResBody = any> = (
-  req: Request<TParam, TResBody, TBody, TQuery>,
-  res: Response<TResBody>,
+export type Handler<T extends InputType = any, R = any> = (
+  req: Request<T['param'], any, T['body'], T['query']>,
+  res: Response,
   next: NextFunction,
-) => any | Promise<any>;
+) => R;
 
 /**
  * A generic type for input validation schemas.

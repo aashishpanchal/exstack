@@ -121,15 +121,30 @@ export const HttpStatus = Object.freeze({
   /** Unprocessable entity. */
   UNPROCESSABLE_ENTITY: 422,
   '422_NAME': 'UNPROCESSABLE_ENTITY',
+  /** Locked. */
+  LOCKED: 423,
+  '423_NAME': 'LOCKED',
   /** Failed dependency. */
   FAILED_DEPENDENCY: 424,
   '424_NAME': 'FAILED_DEPENDENCY',
+  /** Too early. */
+  TOO_EARLY: 425,
+  '425_NAME': 'TOO_EARLY',
+  /** Upgrade required. */
+  UPGRADE_REQUIRED: 426,
+  '426_NAME': 'UPGRADE_REQUIRED',
   /** Precondition required. */
   PRECONDITION_REQUIRED: 428,
   '428_NAME': 'PRECONDITION_REQUIRED',
   /** Too many requests. */
   TOO_MANY_REQUESTS: 429,
   '429_NAME': 'TOO_MANY_REQUESTS',
+  /** Request header fields too large. */
+  REQUEST_HEADER_FIELDS_TOO_LARGE: 431,
+  '431_NAME': 'REQUEST_HEADER_FIELDS_TOO_LARGE',
+  /** Unavailable for legal reasons. */
+  UNAVAILABLE_FOR_LEGAL_REASONS: 451,
+  '451_NAME': 'UNAVAILABLE_FOR_LEGAL_REASONS',
   /** Internal server error. */
   INTERNAL_SERVER_ERROR: 500,
   '500_NAME': 'INTERNAL_SERVER_ERROR',

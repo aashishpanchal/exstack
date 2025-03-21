@@ -18,7 +18,7 @@ const handleResult = (result: unknown, res: Response): void => {
 /**
  * Wraps an async route handler to manage errors and response handling.
  *
- * @param {Handler} func - The route handler, which can return a value or a Promise.
+ * @param {Handler} callback - The route handler, which can return a value or a Promise.
  * @returns {Handler} - A wrapped handler with error and result handling.
  *
  * @example
@@ -32,12 +32,12 @@ const handleResult = (result: unknown, res: Response): void => {
  * app.get('/example', handler<InputType<any, any, {name: string}>>(async req => await fetchData(req.query.name)));
  */
 export const handler =
-  <T extends InputType>(func: Handler<T['body'], T['param'], T['query']>): Handler<T['body'], T['param'], T['query']> =>
-  (req, res, next) => {
+  <I extends InputType>(callback: Handler<I, any | Promise<any>>): Handler<I, Promise<void>> =>
+  async (req, res, next) => {
     try {
-      const result = func(req, res, next);
+      const result = callback(req, res, next);
       // Handle async results
-      if (result instanceof Promise) result.then(value => handleResult(value, res)).catch(next);
+      if (result instanceof Promise) await result.then(value => handleResult(value, res)).catch(next);
       // Handle sync results
       else handleResult(result, res);
     } catch (error) {

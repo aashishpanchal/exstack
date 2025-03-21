@@ -3,18 +3,23 @@ import type {Response} from 'express';
 import type {ClientErrorStatusCode, ServerErrorStatusCode} from './types';
 
 /** The type for the body message of HTTP errors. */
-export type Message = string | string[];
+type Message = string | string[];
 /** The structure of the HTTP error body. */
-export type HttpErrorBody = {detail?: any; error: string; status: number; message: Message};
+export type HttpErrorBody = {
+  data?: Record<string, unknown> | null;
+  error: string;
+  status: Status;
+  message: Message;
+};
 // Define the type for the status code of HTTP errors
-type StatusCode = ServerErrorStatusCode | ClientErrorStatusCode;
+type Status = ServerErrorStatusCode | ClientErrorStatusCode;
 
 /**
  * Get a human-readable error name from the HTTP status code.
  * @param {number} status - The HTTP status code.
  * @returns {string} - The formatted error name.
  */
-export const getErrorName = (status: StatusCode): string => {
+export const getErrorName = (status: Status): string => {
   if (status < 400 || status > 511) return 'HttpError';
   // Find the key corresponding to the given status code
   const statusKey = HttpStatus[`${status}_NAME`];
@@ -34,126 +39,106 @@ export const getErrorName = (status: StatusCode): string => {
  */
 export class HttpError extends Error {
   /**
-   * @param {Message} msg - The error message.
-   * @param {StatusCode} status - The HTTP status code. default is 500 (Internal Server Error).
-   * @param {any} [detail] - Optional detailed error information.
+   * Creates an instance of `HTTPException`.
+   * @param status - HTTP status code for the exception. Defaults to 500.
+   * @param options - Additional options for the exception.
    */
   constructor(
-    readonly msg: Message,
-    readonly status: StatusCode = HttpStatus.INTERNAL_SERVER_ERROR,
-    readonly detail?: object,
+    readonly status: Status = HttpStatus.INTERNAL_SERVER_ERROR,
+    readonly options: Pick<HttpErrorBody, 'message' | 'data'> & {cause?: unknown},
   ) {
-    super();
-    this.name = getErrorName(status);
-    this.message = typeof msg === 'string' ? msg : this.name;
+    super(typeof options.message === 'string' ? options.message : getErrorName(status));
+    this.name = getErrorName(status); // change name of error according to status code
     Error.captureStackTrace(this, this.constructor);
   }
 
   /**
-   * Convert the HttpError instance to a Body object.
-   * @returns {HttpBody} - The JSON representation of the error.
+   * Check if the given error is an instance of HttpError.
+   * @param {unknown} value - The error to check.
+   * @returns {boolean} - True if the error is an instance of HttpError, false otherwise.
+   *
+   * @example
+   * if (HttpError.isHttpError(error)) {
+   *   // Handle the HttpError
+   * }
    */
-  public getBody = (): HttpErrorBody => {
-    const obj: HttpErrorBody = {error: this.name, status: this.status, message: this.msg};
-    if (this.detail) obj['detail'] = this.detail;
-    return obj;
-  };
+  static isHttpError = (value: unknown): value is HttpError => value instanceof HttpError;
+
+  /**
+   * Convert the HttpError instance to a Body object.
+   * @example
+   * const errorBody = new HttpError(404, {message: 'Not Found'}).body;
+   */
+  get body(): HttpErrorBody {
+    const {name: error, status} = this;
+    const {message, data = null} = this.options;
+    return {status, error, message, data};
+  }
 
   /**
    * Send the json of the error in an HTTP response.
    * @param {Response} res - The Express response object.
    *
    * @example
-   * new HttpError('Not Found', 404).toJson(res);
+   * new HttpError(404, {message: 'Not Found'}).toJson(res);
    */
-  public toJson = (res: Response): void => {
-    res.status(this.status).json(this.getBody());
-  };
-
-  /**
-   * Check if the given error is an instance of HttpError.
-   * @param {unknown} value - The error to check.
-   * @returns {boolean} - True if the error is an instance of HttpError, false otherwise.
-   */
-  public static isHttpError = (value: unknown): value is HttpError => value instanceof HttpError;
+  toJson(res: Response): void {
+    res.status(this.status).json(this.body);
+  }
 }
+
+/**
+ * Utility function to create custom error classes.
+ * @param status - HTTP status code.
+ * @returns - A new error class.
+ * @example
+ * const NotFoundError = createHttpErrorClass(HttpStatus.NOT_FOUND);
+ */
+export const createHttpErrorClass = (status: Status) =>
+  class extends HttpError {
+    constructor(message: Message, data?: Record<string, unknown> | null, cause?: unknown) {
+      super(status, {message, data, cause});
+    }
+  };
 
 /**
  * Represents a Bad Request HTTP error (400).
  * @extends {HttpError}
  */
-export class BadRequestError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.BAD_REQUEST, detail);
-  }
-}
+export const BadRequestError = createHttpErrorClass(HttpStatus.BAD_REQUEST);
 
 /**
  * Represents a Conflict HTTP error (409).
  * @extends {HttpError}
  */
-export class ConflictError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.CONFLICT, detail);
-  }
-}
+export const ConflictError = createHttpErrorClass(HttpStatus.CONFLICT);
 
 /**
  * Represents a Forbidden HTTP error (403).
  * @extends {HttpError}
  */
-export class ForbiddenError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.FORBIDDEN, detail);
-  }
-}
+export const ForbiddenError = createHttpErrorClass(HttpStatus.FORBIDDEN);
 
 /**
  * Represents a Not Found HTTP error (404).
  * @extends {HttpError}
  */
-export class NotFoundError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.NOT_FOUND, detail);
-  }
-}
+export const NotFoundError = createHttpErrorClass(HttpStatus.NOT_FOUND);
 
 /**
  * Represents an UnAuthorized HTTP error (401).
  * @extends {HttpError}
  */
-export class UnAuthorizedError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.UNAUTHORIZED, detail);
-  }
-}
-
-/**
- * Represents a Not Implemented HTTP error (501).
- * @extends {HttpError}
- */
-export class NotImplementedError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.NOT_IMPLEMENTED, detail);
-  }
-}
-
-/**
- * Represents a Payment Required HTTP error (402).
- * @extends {HttpError}
- */
-export class PaymentRequiredError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.PAYMENT_REQUIRED, detail);
-  }
-}
+export const UnAuthorizedError = createHttpErrorClass(HttpStatus.UNAUTHORIZED);
 
 /**
  * Represents an Internal Server Error HTTP error (500).
  * @extends {HttpError}
  */
-export class InternalServerError extends HttpError {
-  constructor(message: Message, detail?: object) {
-    super(message, HttpStatus.INTERNAL_SERVER_ERROR, detail);
-  }
-}
+export const InternalServerError = createHttpErrorClass(HttpStatus.INTERNAL_SERVER_ERROR);
+
+/**
+ * Represents an Content Too Larger Error HTTP error (413).
+ * @extends {HttpError}
+ */
+export const ContentTooLargeError = createHttpErrorClass(HttpStatus.PAYLOAD_TOO_LARGE);
