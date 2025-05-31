@@ -1,1 +1,6 @@
-bun lint-staged
+echo "Running pre-commit hook..."
+if ! bun run pre-commit; then
+  echo "Error: Failed to pre-commit. commit aborted."
+  exit 1
+fi
+echo "Pre-commit hook completed successfully."
