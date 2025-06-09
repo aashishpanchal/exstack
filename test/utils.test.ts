@@ -34,7 +34,7 @@ describe('ErrorHandler', () => {
     errorHandler(true, logger)(err, {} as Request, res as any, {} as NextFunction);
 
     // Expect the logger to have been called with the cause
-    expect(logger).toHaveBeenCalledWith(`HttpError Cause: ${cause}`);
+    expect(logger).toHaveBeenCalledWith(cause);
   });
 
   it('Should handle unknown errors gracefully', () => {
@@ -46,7 +46,7 @@ describe('ErrorHandler', () => {
     errorHandler(true, logger)(err, {} as Request, res as any, {} as NextFunction);
 
     // Expect the logger to log the unknown error
-    expect(logger).toHaveBeenCalledWith(`Unknown Error: ${err}`);
+    expect(logger).toHaveBeenCalledWith(err);
 
     // Expect the response to return a standard error structure
     expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);

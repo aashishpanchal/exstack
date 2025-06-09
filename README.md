@@ -79,10 +79,10 @@ The `errorHandler` middleware manages **HttpErrors** and **Unknown** errors, ret
 import {errorHandler} from 'exstack';
 
 // Basic usage with default options
-app.use(globalErrorHandler(process.env.NODE_ENV === 'development'));
+app.use(errorHandler(process.env.NODE_ENV === 'development'));
 
 // Custom usage with logging in production mode
-app.use(globalErrorHandler(process.env.NODE_ENV === 'development', logger.error));
+app.use(errorHandler(process.env.NODE_ENV === 'development', logger.error));
 ```
 
 ### Arguments

@@ -1,6 +1,6 @@
 {
   "name": "exstack",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "Aashish Panchal <aipanchal51@gmail.com>",
   "description": "A utility library designed to simplify and enhance Express.js applications.",
   "main": "dist/index.js",

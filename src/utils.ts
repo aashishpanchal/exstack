@@ -25,11 +25,11 @@ export const errorHandler =
     // Handle known HttpError instances
     if (HttpError.isHttpError(err)) {
       // Log the cause if it exists
-      if (err.options.cause) logger?.(`HttpError Cause: ${err.options.cause}`);
+      if (err.options.cause) logger?.(err.options.cause);
       return err.toJson(res);
     }
     // Write unknown errors if a write function is provided
-    logger?.(`Unknown Error: ${err}`);
+    logger?.(err);
     // Standardized error response for unknown exceptions
     const unknown = {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
