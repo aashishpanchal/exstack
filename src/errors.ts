@@ -7,6 +7,7 @@ type Message = string | string[];
 /** The structure of the HTTP error body. */
 export type HttpErrorBody = {
   data?: Record<string, unknown> | null;
+  code?: string | null;
   error: string;
   status: Status;
   message: Message;
@@ -45,7 +46,7 @@ export class HttpError extends Error {
    */
   constructor(
     readonly status: Status = HttpStatus.INTERNAL_SERVER_ERROR,
-    readonly options: Pick<HttpErrorBody, 'message' | 'data'> & {cause?: unknown},
+    readonly options: Pick<HttpErrorBody, 'message' | 'data' | 'code'> & {cause?: unknown},
   ) {
     super(typeof options.message === 'string' ? options.message : getErrorName(status));
     this.name = getErrorName(status); // change name of error according to status code
@@ -71,8 +72,8 @@ export class HttpError extends Error {
    */
   get body(): HttpErrorBody {
     const {name: error, status} = this;
-    const {message, data = null} = this.options;
-    return {status, error, message, data};
+    const {message, data = null, code = null} = this.options;
+    return {status, error, message, data, code};
   }
 
   /**
@@ -86,7 +87,6 @@ export class HttpError extends Error {
     res.status(this.status).json(this.body);
   }
 }
-
 /**
  * Utility function to create custom error classes.
  * @param status - HTTP status code.
@@ -96,8 +96,15 @@ export class HttpError extends Error {
  */
 export const createHttpErrorClass = (status: Status) =>
   class extends HttpError {
-    constructor(message: Message, data?: Record<string, unknown> | null, cause?: unknown) {
-      super(status, {message, data, cause});
+    constructor(
+      message: Message,
+      options: {
+        cause?: unknown;
+        code?: string | null;
+        data?: Record<string, unknown> | null;
+      } = {},
+    ) {
+      super(status, {message, ...options});
     }
   };
 

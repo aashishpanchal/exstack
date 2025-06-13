@@ -68,7 +68,7 @@ describe('HttpError', () => {
   it('Should include cause and data in the error body if provided', () => {
     const data = {field: 'email', issue: 'Invalid format'}; // Example error data
     const cause = new Error('Underlying issue'); // Underlying error cause
-    const error = new BadRequestError('Validation error', data, cause);
+    const error = new BadRequestError('Validation error', {data, cause});
 
     // Verify error details including `cause` and `data`
     expect(error.options.cause).toBeInstanceOf(Error); // Ensure cause is an Error object

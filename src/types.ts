@@ -30,7 +30,7 @@ export type ClientErrorStatusCode = Exclude<
  * type LoginHandler = Handler<InputType<{ username: string; password: string }>>;
  */
 export type Handler<T extends InputType = any, R = any> = (
-  req: Request<T['param'], any, T['body'], T['query']>,
+  req: Request<T['query'], any, T['body'], T['param']>,
   res: Response,
   next: NextFunction,
 ) => R;
