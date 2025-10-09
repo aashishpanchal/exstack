@@ -1,5 +1,5 @@
-import type {HttpStatus} from './enums';
-import type {Request, Response, NextFunction, RequestHandler} from 'express';
+import type {HttpStatus} from './status';
+import type {Request, Response, NextFunction} from 'express';
 
 /** Extracts the value type of an object */
 export type ValueOf<T> = T[keyof T];
@@ -23,17 +23,27 @@ export type ClientErrorStatusCode = Exclude<
 >;
 
 /**
+ * Generic context type for Express request handlers.
+ * @template T - InputType describing body, query, and param
+ */
+export type Context<T extends InputType = any> = {
+  req: Request<T['param'], any, T['body'], T['query']>;
+  res: Response;
+  next: NextFunction;
+  // Shorthand accessors
+  body: T['body'];
+  query: T['query'];
+  param: T['param'];
+};
+
+/**
  * A generic type for request handler functions in an Express application.
  *
  * @example
  * // Example usage for a login handler
  * type LoginHandler = Handler<InputType<{ username: string; password: string }>>;
  */
-export type Handler<T extends InputType = any, R = any> = (
-  req: Request<T['query'], any, T['body'], T['param']>,
-  res: Response,
-  next: NextFunction,
-) => R;
+export type Handler<T extends InputType = any, R = any> = (ctx: Context<T>) => R;
 
 /**
  * A generic type for input validation schemas.
@@ -43,13 +53,3 @@ export type Handler<T extends InputType = any, R = any> = (
  * type LoginInput = InputType<{ username: string; password: string }>;
  */
 export type InputType<TBody = any, TParam = any, TQuery = any> = {body: TBody; query: TParam; param: TQuery};
-
-// Define a constructor type for classes
-export type Constructor<T> = new (...args: any[]) => T;
-
-// Define a type that wraps methods of a class with request handlers
-export type WrappedMethods<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => any
-    ? RequestHandler // If the method is a function, wrap it with ReqHandler
-    : T[K]; // Otherwise, keep the original type
-};

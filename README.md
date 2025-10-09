@@ -17,12 +17,10 @@
 5. **Core Features**
    - [Error Handling Middleware](#errorhandler-error-handler-middleware)
    - [Not Found Middleware](#notfound-notfound-handler-middleware-)
-   - [Async Handler](#async-handler-simplifying-controllers-️)
+   - [Handler Utility](#handler-simplifying-controllers-️)
    - [Standardized API Responses](#standardized-json-responses-with-apires-)
    - [HttpError Utility](#httperror-)
    - [HttpStatus Constants](#httpstatus-)
-   - [Permission Utility](#permission-makepermission-function)
-   - [Class-Based Controllers with ProxyWrapper](#proxywrapper-class-controllers-️)
 6. **[Conclusion](#conclusion-)**
 7. **[Contributing](#contributing-)**
 8. **[Author](#author-)**
@@ -40,29 +38,29 @@ npm install --save exstack
 
 ## Quick Start ⚡
 
-Here’s a minimal setup to get you started with exstack:
+Here's a minimal setup to get you started with exstack:
 
 ```typescript
 import express from 'express';
-import {handler, errorHandler, notFound} from 'exstack';
+import {handler, errorHandler, notFound, ApiRes} from 'exstack';
 
 const app = express();
 
 // Middleware
 app.use(express.json());
 
-// Routers
+// Routes
 app.get(
   '/user/:id',
-  handler(async (req, res) => {
-    const user = await getUserById(req.params.id);
-    return ApiRes.ok(user); // Send user data in the response
+  handler(async ({param}) => {
+    const user = await getUserById(param.id);
+    return ApiRes.ok(user, 'User fetched successfully');
   }),
 );
 
 // Error handling middleware
 app.use(notFound());
-app.use(errorHandler(conf.isDev, logger.error));
+app.use(errorHandler(process.env.NODE_ENV === 'development'));
 
 app.listen(3000, () => {
   console.log('Server running on port 3000');
@@ -104,17 +102,17 @@ app.use(notFound());
 app.use(notFound('*'));
 ```
 
-## `async-handler`: Simplifying Controllers 🛠️
+## `handler`: Simplifying Controllers 🛠️
 
-Eliminates repetitive **`try-catch`** blocks by managing error handling for both async and sync functions. It also integrates seamlessly with **ApiRes** for enhanced response handling.
+Eliminates repetitive **`try-catch`** blocks by managing error handling for both async and sync functions. It also integrates seamlessly with **ApiRes** for enhanced response handling and provides a clean context-based API.
 
 ### Simplifying Route Handlers
 
 ```typescript
 import {handler, ApiRes} from 'exstack';
 
-// Route without async-handler (traditional approach with try-catch)
-app.get('/user/:id', async (req, res, next) => {
+// Route without handler (traditional approach with try-catch)
+app.get('/user/:id', async ({req, res, next}) => {
   try {
     const user = await getUserById(req.params.id);
     res.status(200).json(user);
@@ -126,8 +124,8 @@ app.get('/user/:id', async (req, res, next) => {
 // Route using handler (simplified with exstack)
 app.get(
   '/user/:id',
-  handler(async (req, res) => {
-    const user = await getUserById(req.params.id);
+  handler(async ({param}) => {
+    const user = await getUserById(param.id);
     // Send success response using ApiRes
     return ApiRes.ok(user, 'User fetched successfully');
   }),
@@ -143,8 +141,8 @@ import {handler, ApiRes, type InputType} from 'exstack';
 type LoginInput = InputType<{email: string; password: string}>;
 
 // Login request handler
-const login = handler<LoginInput>(async (req, res) => {
-  const {email, password} = req.body;
+const login = handler<LoginInput>(async ({body, res}) => {
+  const {email, password} = body;
   const user = await loginUser(email, password);
 
   // Manually setting headers
@@ -182,10 +180,10 @@ app.get(
   handler(() => ({message: 'Hello World!'})),
 );
 // without api-res
-app.pos(
+app.post(
   '/login',
-  handler(async (req, res) => {
-    const user = await getUserById(req.params.id);
+  handler(async ({param, res}) => {
+    const user = await getUserById(param.id);
     // Manually setting headers
     res.setHeader('X-Custom-Header', 'SomeHeaderValue');
     // Setting cookies
@@ -213,22 +211,22 @@ ApiRes provides a consistent structure for API responses. It includes several st
 ```typescript
 import {ApiRes, handler} from 'exstack';
 
-// Example without async-handler
-app.get('/hello', (req, res) => new ApiRes.ok({}, 'Hello World').toJson(res));
+// Example without handler
+app.get('/hello', ({req, res}) => new ApiRes.ok({}, 'Hello World').toJson(res));
 
 // With ok (200)
-const get = handler(async req => ApiRes.ok(await getUser(req.params), 'Get user successfully'));
+const get = handler(async ({param}) => ApiRes.ok(await getUser(param), 'Get user successfully'));
 
 // With created (201)
-const create = handler(async req => ApiRes.created(await createUser(req.body), 'User created successfully'));
+const create = handler(async ({body}) => ApiRes.created(await createUser(body), 'User created successfully'));
 
 // With paginated (200)
-const list = handler(async req => {
-  const {data, meta} = await getUsers(req.query);
+const list = handler(async ({query}) => {
+  const {data, meta} = await getUsers(query);
   return ApiRes.paginated(data, meta, 'Get users list successfully');
 });
 
-// Routers
+// Routes
 app.route('/').get(list).post(create);
 app.route('/:id').get(get);
 ```
@@ -257,24 +255,24 @@ new ApiRes({}, 'Hello World').body;
 
 ## HttpError ❌
 
-The HttpError class standardizes error handling by extending the native Error class. It’s used to throw HTTP-related errors, which are the caught by **`errorHandler`** [middleware](#errorhandler-error-handler-middleware).
+The HttpError class standardizes error handling by extending the native Error class. It's used to throw HTTP-related errors, which are the caught by **`errorHandler`** [middleware](#errorhandler-error-handler-middleware).
 
 #### Usage:
 
 ```typescript
 import {HttpError, HttpStatus} from 'exstack';
 
-// Example without async-handler
+// Example without handler
 app.get(
   '*',
-  req => new HttpError(HttpStatus.NOT_FOUND, {message: 'Not Found'}).toJson(req.res!), // Throw a 404 error
+  ({res}) => new HttpError(HttpStatus.NOT_FOUND, {message: 'Not Found'}).toJson(res!), // Throw a 404 error
 );
 
-// Example with async-handler
+// Example with handler
 app.post(
   '/example/:id',
-  handler(req => {
-    if (!req.params.id) throw new BadRequestError('Id is required');
+  handler(({param}) => {
+    if (!param.id) throw new BadRequestError('Id is required');
     // .....
   }),
 );
@@ -382,19 +380,19 @@ The `HttpStatus` provides readable constants for standard HTTP status codes **(2
 import {HttpStatus} from 'exstack';
 
 // Example: Basic usage in a route
-app.get('/status-example', (req, res) => {
+app.get('/status-example', ({req, res}) => {
   res.status(HttpStatus.OK).json({message: 'All good!'});
 });
 
 // Example: Custom error handling middleware
-app.use((req, res) => {
+app.use(({req, res}) => {
   res.status(HttpStatus.NOT_FOUND).json({
     error: 'Resource not found',
   });
 });
 
 // Example: Response with a 201 Created status
-app.post('/create', (req, res) => {
+app.post('/create', ({req, res}) => {
   const resource = createResource(req.body);
   res.status(HttpStatus.CREATED).json({
     message: 'Resource created successfully',
@@ -414,7 +412,6 @@ const statusName = HttpStatus.["200_NAME"]; // 'OK'
 ### Commonly Used HTTP Status Codes:
 
 - **2xx: Success**
-
   - `HttpStatus.OK`: 200 — Request succeeded.
   - `HttpStatus.CREATED`: 201 — Resource created.
   - `HttpStatus.ACCEPTED`: 202 — Request accepted for processing.
@@ -422,14 +419,12 @@ const statusName = HttpStatus.["200_NAME"]; // 'OK'
   - and more ....
 
 - **3xx: Redirection**
-
   - `HttpStatus.MOVED_PERMANENTLY`: 301 — Resource moved permanently.
   - `HttpStatus.FOUND`: 302 — Resource found at another URI.
   - `HttpStatus.NOT_MODIFIED`: 304 — Resource not modified.
   - and more ....
 
 - **4xx: Client Error**
-
   - `HttpStatus.BAD_REQUEST`: 400 — Bad request.
   - `HttpStatus.UNAUTHORIZED`: 401 — Authentication required.
   - `HttpStatus.FORBIDDEN`: 403 — Access forbidden.
@@ -442,107 +437,9 @@ const statusName = HttpStatus.["200_NAME"]; // 'OK'
   - `HttpStatus.SERVICE_UNAVAILABLE`: 503 — Service unavailable.
   - and more ....
 
-## Permission `makePermission` function
-
-Utility function, That Generates a permission object mapping `subjects` and `actions` to permission strings.
-
-```ts
-/** Server Permissions */
-const Permissions = makePermission({
-  actions: ['create', 'read', 'update', 'delete'] as const,
-  subjects: ['user', 'blog', 'comment'] as const,
-  filter: {
-    user: ['read'], // user only map read
-  },
-});
-
-console.log(Permission.USER_READ); // user:read
-```
-
-## `proxyWrapper`: Class Controllers 🏗️
-
-`exstack` provides the utility `proxyWrapper` to make simplify working with class-based controllers in Express.
-
-#### Usage:
-
-```typescript
-// example-controller.ts
-import {Request} from 'express';
-
-// Controller Class
-class ExampleController {
-  constructor(private message: string) {}
-
-  async getData(req: Request) {
-    // Your logic here
-    return ApiRes.ok({}, this.message);
-  }
-}
-
-// example-routes.ts
-import {Router} from 'express';
-import {proxyWrapper} from 'exstack';
-import {ExampleController} from './example-controller';
-
-const exampleRoutes = (): Router => {
-  const router = Router();
-
-  // Create a proxied instance of ExampleController
-  const example = proxyWrapper(ExampleController, 'Hello World');
-
-  // Configure routes
-  return router.post('/data', example.getData);
-};
-```
-
-### `proxyWrapper(clsOrInstance, ...args)`:
-
-- **Parameters**:
-  - `clsOrInstance`: A class constructor or an instance of a class.
-  - `args`: Arguments for the class constructor (if `clsOrInstance` is a constructor).
-- **Returns**: A proxied instance where all methods are wrapped with `async-handler`.
-
-### How It Works
-
-- Instantiates the specified class if a constructor is provided.
-- Wraps all its methods with `async-handler`, allowing for automatic handle of asynchronous operations.
-- **Prevents method/property** overrides for safety.
-
-### Using Dependency Injection Libraries (Optional)
-
-You can use `proxyWrapper` with dependency injection libraries like [`typedi`](https://www.npmjs.com/package/typedi) or [`tsyringe`](https://www.npmjs.com/package/tsyringe).
-
-#### Example with `tsyringe`
-
-```typescript
-const exampleRoutes = (): Router => {
-  const router = Router();
-
-  // Create a proxied instance of ExampleController
-  const example = proxyWrapper(container.resolve(ExampleController));
-
-  // Configure routes
-  return router.post('/data', example.getData);
-};
-```
-
-#### Example with `typedi`
-
-```typescript
-const exampleRoutes = (): Router => {
-  const router = Router();
-
-  // Create a proxied instance of ExampleController
-  const example = proxyWrapper(Container.get(ExampleController));
-
-  // Configure routes
-  return router.post('/data', example.getData);
-};
-```
-
 ## Conclusion 🏁
 
-`exstack` is a powerful tool designed to simplify and enhance Express.js applications by providing essential features out of the box. Whether you’re building a simple API or a complex web application, exstack helps you maintain clean and manageable code.
+`exstack` is a powerful tool designed to simplify and enhance Express.js applications by providing essential features out of the box. Whether you're building a simple API or a complex web application, exstack helps you maintain clean and manageable code.
 
 ## Contributing 🤝
 

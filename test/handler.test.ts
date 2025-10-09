@@ -1,80 +1,114 @@
-import {ApiRes} from '../src/api-res';
-import {describe, it, expect, vi} from 'vitest';
-import {handler, proxyWrapper} from '../src/handler';
+import {handler, ApiRes} from '../src';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import type {Response, NextFunction, Request} from 'express';
 
-// Mock Express request, response, and next function
-const mockResponse = () => ({
+/**
+ * Utility: Creates a minimal mock of Express's `Response` object
+ * using Vitest spies. Each method is chainable by returning `this`.
+ */
+const createMockResponse = (): Partial<Response> => ({
   send: vi.fn().mockReturnThis(),
   json: vi.fn().mockReturnThis(),
   status: vi.fn().mockReturnThis(),
 });
-const mockNext = vi.fn();
 
-describe('Handler', () => {
-  it('Should handle a synchronous route handler correctly', () => {
-    const req = {}; // Mock request object
-    const res = mockResponse();
+describe('Handler Utility', () => {
+  let res: Partial<Response>;
+  let next: NextFunction;
+  let req: Partial<Request>;
+
+  /**
+   * Runs before each test — resets mocks to ensure test isolation.
+   */
+  beforeEach(() => {
+    res = createMockResponse();
+    next = vi.fn();
+    req = {body: {name: 'Alice'}, query: {}, params: {}};
+  });
+
+  /**
+   * TEST CASE #1
+   * Validates that the handler correctly processes
+   * a synchronous route handler that returns an ApiRes instance.
+   */
+  it('should handle a synchronous route handler correctly', () => {
+    // Arrange
     const func = vi.fn().mockReturnValue(new ApiRes('Success'));
-
-    // Wrap function with handler
     const wrappedHandler = handler(func);
-    wrappedHandler(req as any, res as any, mockNext);
 
-    // Check expectations
-    expect(func).toHaveBeenCalledWith(req, res, mockNext);
-    expect(res.json).toHaveBeenCalledWith({status: 200, message: 'Operation successful', result: 'Success'});
+    // Act
+    wrappedHandler(req as Request, res as Response, next);
+
+    // Assert: ensure the route logic received proper arguments
+    expect(func).toHaveBeenCalledWith({
+      req,
+      res,
+      next,
+      body: {name: 'Alice'},
+      query: {},
+      param: {},
+    });
+
+    // Assert: ensure the standardized API response is sent
+    expect(res.json).toHaveBeenCalledWith({
+      status: 200,
+      message: 'Operation successful',
+      result: 'Success',
+    });
   });
 
-  it('Should handle an asynchronous route handler correctly', async () => {
-    const res = mockResponse();
-    const req = {};
+  /**
+   * TEST CASE #2
+   * Ensures async route handlers returning ApiRes
+   * are properly awaited and their results serialized to JSON.
+   */
+  it('should handle an asynchronous route handler correctly', async () => {
+    // Arrange
     const func = vi.fn().mockResolvedValue(new ApiRes('Async Success'));
-
     const wrappedHandler = handler(func);
-    await wrappedHandler(req as any, res as any, mockNext);
 
-    expect(func).toHaveBeenCalledWith(req, res, mockNext);
-    expect(res.json).toHaveBeenCalledWith({status: 200, message: 'Operation successful', result: 'Async Success'});
+    // Act
+    await wrappedHandler(req as Request, res as Response, next);
+
+    // Assert: ensure parameters were passed to the wrapped function
+    expect(func).toHaveBeenCalledWith({
+      req,
+      res,
+      next,
+      body: {name: 'Alice'},
+      query: {},
+      param: {},
+    });
+
+    // Assert: verify the JSON response structure and content
+    expect(res.json).toHaveBeenCalledWith({
+      status: 200,
+      message: 'Operation successful',
+      result: 'Async Success',
+    });
   });
 
-  it('Should call next with error on async failure', async () => {
-    const req = {};
-    const res = mockResponse();
-    const error = new Error('Test Error');
-    const func = vi.fn().mockRejectedValue(error); // Throw error on runtime
+  /**
+   * TEST CASE #3
+   * Confirms that errors in async handlers are caught
+   * and passed to Express's `next()` error handler.
+   */
+  it('should call next with an error when an async handler throws', () => {
+    return new Promise<void>(resolve => {
+      // Arrange
+      const error = new Error('Test Error');
+      const func = vi.fn().mockRejectedValue(error);
+      const wrappedHandler = handler(func);
 
-    const wrappedHandler = handler(func);
-    await wrappedHandler(req as any, res as any, mockNext);
-    // Check next have error or not
-    expect(mockNext).toHaveBeenCalledWith(error);
-  });
-});
+      // Mock next to resolve the promise when called
+      const mockNext = vi.fn(err => {
+        expect(err).toBe(error);
+        expect(res.json).not.toHaveBeenCalled();
+        resolve();
+      });
 
-describe('ProxyWrapper Handler', () => {
-  class TestClass {
-    async successMethod() {
-      return new ApiRes('Wrapped Success');
-    }
-    async failureMethod() {
-      throw new Error('Wrapped Error');
-    }
-  }
-
-  it('Should wrap a class method and handle successful response', async () => {
-    const res = mockResponse();
-    const instance = proxyWrapper(TestClass);
-
-    await instance.successMethod({} as any, res as any, mockNext);
-
-    expect(res.json).toHaveBeenCalledWith({status: 200, message: 'Operation successful', result: 'Wrapped Success'});
-  });
-
-  it('Should pass error to next on method failure', async () => {
-    const res = mockResponse();
-    const instance = proxyWrapper(TestClass);
-
-    await instance.failureMethod({} as any, res as any, mockNext);
-
-    expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      // Act
+      wrappedHandler(req as Request, res as Response, mockNext);
+    });
   });
 });

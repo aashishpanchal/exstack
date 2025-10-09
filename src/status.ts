@@ -37,6 +37,9 @@ export const HttpStatus = Object.freeze({
   /** Partial content delivered. */
   PARTIAL_CONTENT: 206,
   '206_NAME': 'PARTIAL_CONTENT',
+  /** Multi-Status */
+  MULTI_STATUS: 207,
+  '207_NAME': 'MULTI_STATUS',
   /** Multiple choices available. */
   AMBIGUOUS: 300,
   '300_NAME': 'AMBIGUOUS',

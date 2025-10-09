@@ -1,9 +1,10 @@
-import {HttpStatus} from './enums';
+import {HttpStatus} from '../status';
 import type {Response} from 'express';
-import type {ClientErrorStatusCode, ServerErrorStatusCode} from './types';
+import type {ClientErrorStatusCode, ServerErrorStatusCode} from '../types';
 
 /** The type for the body message of HTTP errors. */
 type Message = string | string[];
+
 /** The structure of the HTTP error body. */
 export type HttpErrorBody = {
   data?: Record<string, unknown> | null;
@@ -12,6 +13,7 @@ export type HttpErrorBody = {
   status: Status;
   message: Message;
 };
+
 // Define the type for the status code of HTTP errors
 type Status = ServerErrorStatusCode | ClientErrorStatusCode;
 
@@ -46,7 +48,9 @@ export class HttpError extends Error {
    */
   constructor(
     readonly status: Status = HttpStatus.INTERNAL_SERVER_ERROR,
-    readonly options: Pick<HttpErrorBody, 'message' | 'data' | 'code'> & {cause?: unknown},
+    readonly options: Pick<HttpErrorBody, 'message' | 'data' | 'code'> & {
+      cause?: unknown;
+    },
   ) {
     super(typeof options.message === 'string' ? options.message : getErrorName(status));
     this.name = getErrorName(status); // change name of error according to status code
@@ -83,9 +87,9 @@ export class HttpError extends Error {
    * @example
    * new HttpError(404, {message: 'Not Found'}).toJson(res);
    */
-  toJson(res: Response): void {
+  toJson = (res: Response): void => {
     res.status(this.status).json(this.body);
-  }
+  };
 }
 /**
  * Utility function to create custom error classes.
@@ -149,3 +153,12 @@ export const InternalServerError = createHttpErrorClass(HttpStatus.INTERNAL_SERV
  * @extends {HttpError}
  */
 export const ContentTooLargeError = createHttpErrorClass(HttpStatus.PAYLOAD_TOO_LARGE);
+
+new HttpError(400, {
+  code: 'Not Found',
+  cause: new Error('Hello World'),
+  message: '',
+  data: {
+    email: 'Email is need!',
+  },
+});

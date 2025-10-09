@@ -1,6 +1,6 @@
 {
   "name": "exstack",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "author": "Aashish Panchal <aipanchal51@gmail.com>",
   "description": "A utility library designed to simplify and enhance Express.js applications.",
   "main": "dist/index.js",
@@ -13,7 +13,8 @@
   "scripts": {
     "build": "bun remove-dist && tsdown ./src/index.ts --format esm,cjs --dts",
     "lint": "eslint \"./{src,test}/**/*.{ts,js}\" --fix",
-    "test": "vitest run && vitest --typecheck --run --passWithNoTests",
+    "test": "vitest run",
+    "test:types": "vitest --typecheck --run --passWithNoTests",
     "format": "prettier --write \"./{src,test}/**/*.{ts,js}\"",
     "release": "bun run build && npm publish",
     "pre-commit": "bun run format && bun run lint && bun run test",
@@ -35,23 +36,23 @@
     }
   },
   "devDependencies": {
-    "@eslint/js": "^9.28.0",
-    "@types/express": "^5.0.2",
-    "@types/node": "^22.15.29",
-    "eslint": "^9.28.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.4.1",
-    "globals": "^16.2.0",
+    "@eslint/js": "^9.37.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.7.0",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.4.0",
     "husky": "^9.1.7",
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
-    "tsdown": "^0.12.5",
-    "typescript": "~5.5.4",
-    "typescript-eslint": "^8.33.0",
-    "vitest": "^3.1.4"
+    "tsdown": "^0.15.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.45.0",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "express": "^4.21.2"
+    "express": "^5.1.0"
   },
   "repository": {
     "type": "git",
@@ -68,8 +69,8 @@
     "http-errors",
     "async-handler"
   ],
-  "packageManager": "bun@1.2.2",
+  "packageManager": "bun@1.2.23",
   "engines": {
-    "node": ">=22.13.1"
+    "node": ">=22"
   }
 }
