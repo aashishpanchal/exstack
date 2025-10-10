@@ -153,12 +153,3 @@ export const InternalServerError = createHttpErrorClass(HttpStatus.INTERNAL_SERV
  * @extends {HttpError}
  */
 export const ContentTooLargeError = createHttpErrorClass(HttpStatus.PAYLOAD_TOO_LARGE);
-
-new HttpError(400, {
-  code: 'Not Found',
-  cause: new Error('Hello World'),
-  message: '',
-  data: {
-    email: 'Email is need!',
-  },
-});
