@@ -17,7 +17,7 @@
     "test:types": "vitest --typecheck --run --passWithNoTests",
     "format": "prettier --write \"./{src,test}/**/*.{ts,js}\"",
     "release": "bun run build && npm publish",
-    "pre-commit": "bun run format && bun run lint && bun run test",
+    "pre-commit": "bun format && bun lint && bun test",
     "check-types": "tsc --noEmit",
     "remove-dist": "rimraf dist",
     "prepare": "husky"
