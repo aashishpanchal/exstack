@@ -6,7 +6,7 @@ const tsdownConfig: Options = {
   dts: true,
   clean: false,
   sourcemap: false,
-  minify: true,
+  // minify: true,
   target: 'esnext',
   format: ['esm', 'cjs'],
   outDir: './dist',
@@ -38,8 +38,8 @@ async function buildProject() {
 
 buildProject()
   .then(async () => {
-    // 🧩 Fix ESM import paths to include `.js` extension
-    const glob = new Glob('./dist/**/*.js');
+    // 🧩 Fix ESM import paths to include `.mjs`
+    const glob = new Glob('./dist/**/*.mjs');
 
     for await (const entry of glob.scan('.')) {
       const content = await Bun.file(entry).text();
@@ -47,12 +47,12 @@ buildProject()
       const fixed = content
         // Only match imports/exports from relative paths
         .replace(
-          /(import|export)\s*\{([^}]*)\}\s*from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.js)['"]/g,
-          '$1{$2}from"$3.js"',
+          /(import|export)\s*\{([^}]*)\}\s*from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.mjs)['"]/g,
+          '$1{$2}from"$3.mjs"',
         )
         .replace(
-          /(import|export)\s+([\w_$]+)\s+from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.js)['"]/g,
-          '$1 $2 from"$3.js"',
+          /(import|export)\s+([\w_$]+)\s+from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.mjs)['"]/g,
+          '$1 $2 from"$3.mjs"',
         );
 
       await Bun.write(entry, fixed);
