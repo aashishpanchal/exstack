@@ -22,7 +22,7 @@ type Status = ServerErrorStatusCode | ClientErrorStatusCode;
  * @param {number} status - The HTTP status code.
  * @returns {string} - The formatted error name.
  */
-export const getErrorName = (status: Status): string => {
+const getErrorName = (status: Status): string => {
   if (status < 400 || status > 511) return 'HttpError';
   // Find the key corresponding to the given status code
   const statusKey = HttpStatus[`${status}_NAME`];

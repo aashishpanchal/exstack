@@ -52,7 +52,7 @@ export const errorHandler =
  * @example
  * app.use(notFound())
  */
-export const notFound = (path: string = '*'): Router =>
+export const notFound = (path: string = '*splat'): Router =>
   Router().all(path, (req, res) =>
     new HttpError(HttpStatus.NOT_FOUND, {
       message: `Cannot ${req.originalUrl} on ${req.method.toUpperCase()}`,

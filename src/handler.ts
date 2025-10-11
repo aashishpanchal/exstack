@@ -1,6 +1,8 @@
-import {ApiRes} from '../helps';
-import type {RequestHandler, Response} from 'express';
-import type {Handler, Context, InputType} from '../types';
+import {ApiRes} from './helps';
+import type {Handler, Context, InputType} from './types';
+import type {NextFunction, Request, Response} from 'express';
+
+type ReqHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>;
 
 /**
  * Sends the result from a route handler to the client.
@@ -38,7 +40,7 @@ const handleResult = (result: unknown, res: Response): void => {
  * );
  */
 export const handler =
-  <I extends InputType>(callback: Handler<I, any | Promise<any>>): RequestHandler =>
+  <I extends InputType>(callback: Handler<I>): ReqHandler =>
   async (req, res, next) => {
     try {
       const ctx: Context = {

@@ -19,6 +19,7 @@
    - [Not Found Middleware](#notfound-notfound-handler-middleware-)
    - [Handler Utility](#handler-simplifying-controllers-️)
    - [Standardized API Responses](#standardized-json-responses-with-apires-)
+   - [Zod Validator](#zod-validator-)
    - [HttpError Utility](#httperror-)
    - [HttpStatus Constants](#httpstatus-)
 6. **[Conclusion](#conclusion-)**
@@ -252,6 +253,66 @@ Returns the Body `(JSON)` representation of the response.
 ```typescript
 new ApiRes({}, 'Hello World').body;
 ```
+
+## Zod Validator 🔍
+
+The Zod validator provides seamless request validation for Express.js routes using Zod schemas. It validates request body, query parameters, and URL parameters with automatic error handling.
+
+### Installation
+
+```bash
+npm install zod
+```
+
+### Usage
+
+```typescript
+import {validator} from 'exstack/zod';
+import {z} from 'zod';
+
+// Define schemas
+const userSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  age: z.number().min(18)
+});
+
+const paramsSchema = z.object({
+  id: z.string().uuid()
+});
+
+const querySchema = z.object({
+  page: z.string().transform(Number).optional(),
+  limit: z.string().transform(Number).optional()
+});
+
+// Use validators in routes
+app.post('/users', validator.body(userSchema), handler(({body}) => {
+  // body is now typed and validated
+  return ApiRes.created(body, 'User created');
+}));
+
+app.get('/users/:id', validator.params(paramsSchema), handler(({param}) => {
+  // param.id is validated as UUID
+  return ApiRes.ok({id: param.id}, 'User found');
+}));
+
+app.get('/users', validator.query(querySchema), handler(({query}) => {
+  // query parameters are validated and transformed
+  const {page = 1, limit = 10} = query;
+  return ApiRes.ok({page, limit}, 'Users list');
+}));
+```
+
+### Validator Methods
+
+- `validator.body(schema)`: Validates request body
+- `validator.params(schema)`: Validates URL parameters  
+- `validator.query(schema)`: Validates query string parameters
+
+### Error Handling
+
+Validation errors are automatically converted to HTTP 400 errors with detailed field-level error messages, seamlessly integrated with the `errorHandler` middleware.
 
 ## HttpError ❌
 

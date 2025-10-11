@@ -2,10 +2,10 @@ import type {HttpStatus} from './status';
 import type {Request, Response, NextFunction} from 'express';
 
 /** Extracts the value type of an object */
-export type ValueOf<T> = T[keyof T];
+type ValueOf<T> = T[keyof T];
 
 /** Filters out only number types from a union */
-export type NumberOf<K> = Extract<K, number>;
+type NumberOf<K> = Extract<K, number>;
 
 // Define a type for HttpStatus that only includes number values
 export type HttpStatusCode = NumberOf<ValueOf<typeof HttpStatus>>;
@@ -21,6 +21,15 @@ export type ClientErrorStatusCode = Exclude<
   HttpStatusCode,
   ServerErrorStatusCode | RedirectStatusCode | SuccessStatusCode
 >;
+
+/**
+ * A generic type for input validation schemas.
+ *
+ * @example
+ * // Example usage for a login input schema
+ * type LoginInput = InputType<{ username: string; password: string }>;
+ */
+export type InputType<TBody = any, TParam = any, TQuery = any> = {body: TBody; query: TParam; param: TQuery};
 
 /**
  * Generic context type for Express request handlers.
@@ -44,12 +53,3 @@ export type Context<T extends InputType = any> = {
  * type LoginHandler = Handler<InputType<{ username: string; password: string }>>;
  */
 export type Handler<T extends InputType = any, R = any> = (ctx: Context<T>) => R;
-
-/**
- * A generic type for input validation schemas.
- *
- * @example
- * // Example usage for a login input schema
- * type LoginInput = InputType<{ username: string; password: string }>;
- */
-export type InputType<TBody = any, TParam = any, TQuery = any> = {body: TBody; query: TParam; param: TQuery};
