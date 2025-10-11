@@ -25,7 +25,7 @@ async function buildProject() {
     await build({...entry, ...tsdownConfig});
   }
   // Remove all .d.mts files
-  await rimraf('./dist/**/*.d.mts', {glob: true});
+  await rimraf(['./dist/**/*.d.mts', './dist/**/*.d.cts'], {glob: true});
 
   console.log('✅ Build completed successfully!\n📁 Generated files:');
 
@@ -38,8 +38,8 @@ async function buildProject() {
 
 buildProject()
   .then(async () => {
-    // 🧩 Fix ESM import paths to include `.mjs`
-    const glob = new Glob('./dist/**/*.mjs');
+    // 🧩 Fix ESM import paths to include `.js` extension
+    const glob = new Glob('./dist/**/*.js');
 
     for await (const entry of glob.scan('.')) {
       const content = await Bun.file(entry).text();
@@ -47,12 +47,12 @@ buildProject()
       const fixed = content
         // Only match imports/exports from relative paths
         .replace(
-          /(import|export)\s*\{([^}]*)\}\s*from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.mjs)['"]/g,
-          '$1{$2}from"$3.mjs"',
+          /(import|export)\s*\{([^}]*)\}\s*from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.js)['"]/g,
+          '$1{$2}from"$3.js"',
         )
         .replace(
-          /(import|export)\s+([\w_$]+)\s+from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.mjs)['"]/g,
-          '$1 $2 from"$3.mjs"',
+          /(import|export)\s+([\w_$]+)\s+from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.js)['"]/g,
+          '$1 $2 from"$3.js"',
         );
 
       await Bun.write(entry, fixed);
