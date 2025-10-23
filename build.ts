@@ -6,23 +6,30 @@ const tsdownConfig: Options = {
   dts: true,
   clean: false,
   sourcemap: false,
-  // minify: true,
   target: 'esnext',
   format: ['esm', 'cjs'],
   outDir: './dist',
+  unbundle: true,
+  treeshake: true,
+  unused: true,
 };
 
 const entries: Options[] = [
+  {
+    entry: './src/zod.ts',
+    external: ['zod'],
+  },
   {entry: './src/index.ts'},
-  {entry: './src/zod.ts', external: ['./index', 'zod']},
-  // {entry: './src/env.ts', external: ['fs', 'zod', 'dotenv']},
 ];
 
 async function buildProject() {
+  // Clean previous dist folders
+  await rimraf('./dist', {glob: false});
+
   console.log('🚀 Building exstack...');
   for (const entry of entries) {
     // Build main entry point
-    await build({...entry, ...tsdownConfig});
+    await build({...tsdownConfig, ...entry});
   }
   // Remove all .d.mts files
   await rimraf(['./dist/**/*.d.mts', './dist/**/*.d.cts'], {glob: true});
@@ -43,7 +50,6 @@ buildProject()
 
     for await (const entry of glob.scan('.')) {
       const content = await Bun.file(entry).text();
-
       const fixed = content
         // Only match imports/exports from relative paths
         .replace(
@@ -54,7 +60,6 @@ buildProject()
           /(import|export)\s+([\w_$]+)\s+from\s*['"]((?:\.{1,2}\/)[^'"]+?)(?<!\.mjs)['"]/g,
           '$1 $2 from"$3.mjs"',
         );
-
       await Bun.write(entry, fixed);
     }
   })

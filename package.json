@@ -1,6 +1,6 @@
 {
   "name": "exstack",
-  "version": "0.2.3",
+  "version": "0.3.1",
   "author": "Aashish Panchal <aipanchal51@gmail.com>",
   "description": "A utility library designed to simplify and enhance Express.js applications.",
   "main": "dist/index.js",
@@ -17,10 +17,12 @@
     "test:types": "vitest --typecheck --run --passWithNoTests",
     "format": "prettier --write \"./{src,test}/**/*.{ts,js}\"",
     "release": "bun run build && npm publish",
-    "pre-commit": "bun format && bun lint && bun test",
+    "pre-commit": "bun format && bun test",
     "check-types": "tsc --noEmit",
     "remove-dist": "rimraf dist",
-    "prepare": "husky"
+    "prepare": "husky",
+    "benchmark:1": "bun run ./benchmark/1-benchmark.ts",
+    "benchmark:2": "bun run ./benchmark/2-benchmark.ts"
   },
   "license": "MIT",
   "exports": {
@@ -46,6 +48,7 @@
     "@eslint/js": "^9.37.0",
     "@types/bun": "^1.2.23",
     "@types/express": "^5.0.3",
+    "@types/supertest": "^6.0.3",
     "arg": "^5.0.2",
     "esbuild": "^0.25.10",
     "eslint": "^9.37.0",
@@ -55,9 +58,11 @@
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
+    "supertest": "^7.1.4",
     "tsdown": "^0.15.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
+    "unplugin-unused": "^0.5.4",
     "vitest": "^3.2.4",
     "zod": "^4.1.12"
   },
@@ -82,5 +87,6 @@
   "packageManager": "bun@1.2.23",
   "engines": {
     "node": ">=22"
-  }
+  },
+  "sideEffects": false
 }

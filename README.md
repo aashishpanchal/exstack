@@ -1,345 +1,208 @@
-# Ex⚡
+# ⚡️ Exstack
 
-[![npm downloads](https://img.shields.io/npm/dm/exstack.svg)](https://www.npmjs.com/package/exstack)
 [![npm version](https://img.shields.io/npm/v/exstack.svg)](https://www.npmjs.com/package/exstack)
+[![npm downloads](https://img.shields.io/npm/dm/exstack.svg)](https://www.npmjs.com/package/exstack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Overview 🌟
+> A lightweight, fast, and flexible utility library for **Express.js** — designed to simplify development with a high-performance router, async-safe handlers, built-in validation, and clean, standardized responses.
 
-> `exstack` is a lightweight utility library designed specifically for Express.js, helping developers simplify server-side logic and reduce boilerplate code. It provides ready-to-use features like error handling, HTTP status utilities, and standardized API responses, enabling you to write cleaner, more maintainable code effortlessly.
+## 🧭 Table of Contents
 
-## Navigation 📌
+- [🚀 Features](#-features)
+- [📦 Installation](#-installation)
+- [⚡ Quick Start](#-quick-start)
+- [🧠 Core Concepts](#-core-concepts)
+  - [🗺️ Router](#️-router)
+  - [🧮 Benchmarks](#-router-benchmarks)
+  - [🪄 Handler](#-handler)
+  - [📦 ApiRes](#-apires)
+  - [🚨 HttpError](#-httperror)
+  - [✅ HttpStatus](#-httpstatus)
+  - [🔍 Zod Validator](#-zod-validator)
+  - [🧱 Middleware](#-middleware)
 
-1. **[Overview](#overview-)**
-2. **[Installation](#installation-)**
-3. **[Motivation](#motivation-)**
-4. **[Quick Start](#quick-start-)**
-5. **Core Features**
-   - [Error Handling Middleware](#errorhandler-error-handler-middleware)
-   - [Not Found Middleware](#notfound-notfound-handler-middleware-)
-   - [Handler Utility](#handler-simplifying-controllers-️)
-   - [Standardized API Responses](#standardized-json-responses-with-apires-)
-   - [Zod Validator](#zod-validator-)
-   - [HttpError Utility](#httperror-)
-   - [HttpStatus Constants](#httpstatus-)
-6. **[Conclusion](#conclusion-)**
-7. **[Contributing](#contributing-)**
-8. **[Author](#author-)**
-9. **[License](#license-)**
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
-## Installation 📥
+## 🚀 Features
+
+- ⚡ **High-Performance Router** — Express-compatible router with ultra-fast matching (Trie / RegExp strategies).
+- 🧠 **Async-Friendly Handlers** — Simplify async route logic with automatic error propagation and standardized responses.
+- 🧩 **Standardized Responses** — Use `ApiRes` and `HttpError` for clean, consistent, and typed responses.
+- ✅ **Zod-Based Validation** — Validate request body, query, and params seamlessly.
+- 🧱 **Essential Middleware** — Includes `errorHandler`, `notFound`, and `poweredBy` out of the box.
+- 🧾 **HttpStatus Enum** — Access standardized HTTP status codes and names with clear constants.
+
+## 📦 Installation
 
 ```bash
-npm install --save exstack
+npm install exstack
 ```
 
-## Motivation 💡
-
-> Building APIs often involves repetitive tasks like handling errors, managing HTTP status codes, or structuring JSON responses. `exstack` was created to eliminate this hassle, allowing developers to focus on writing business logic instead of reinventing common solutions. Whether you're a beginner or an experienced developer, `exstack` streamlines your workflow and ensures your **Express** applications are consistent and reliable.
-
-## Quick Start ⚡
-
-Here's a minimal setup to get you started with exstack:
+## ⚡ Quick Start
 
 ```typescript
+import * as z from 'zod';
 import express from 'express';
-import {handler, errorHandler, notFound, ApiRes} from 'exstack';
+import {validator} from 'exstack/zod';
+import {Router, handler, errorHandler, notFound, ApiRes} from 'exstack';
 
 const app = express();
+const router = new Router();
 
 // Middleware
 app.use(express.json());
 
-// Routes
-app.get(
-  '/user/:id',
-  handler(async ({param}) => {
-    const user = await getUserById(param.id);
-    return ApiRes.ok(user, 'User fetched successfully');
-  }),
-);
-
-// Error handling middleware
-app.use(notFound());
-app.use(errorHandler(process.env.NODE_ENV === 'development'));
-
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
+// Validation schema
+const schema = z.object({
+  name: z.string(),
 });
-```
 
-## `errorHandler`: Error Handler Middleware
+// Define routes
+router.get('/ping', () => 'pong');
 
-The `errorHandler` middleware manages **HttpErrors** and **Unknown** errors, returning appropriate **json responses.**
+router.post('/users', validator.body(schema), req => {
+  const user = req.valid<typeof schema>('body');
+  return ApiRes.created(user, 'User created successfully');
+});
 
-### Usage
+// Mount the router
+app.use(router.dispatch);
 
-```typescript
-import {errorHandler} from 'exstack';
-
-// Basic usage with default options
+// Error middleware
+app.use(notFound('*splat'));
 app.use(errorHandler(process.env.NODE_ENV === 'development'));
 
-// Custom usage with logging in production mode
-app.use(errorHandler(process.env.NODE_ENV === 'development', logger.error));
+app.listen(3000, () => console.log('Server running on port 3000'));
 ```
 
-### Arguments
+## 🧠 Core Concepts
 
-- **isDev**: Enables detailed error messages in development mode (default: **true**).
-- **logger**: Optional callback for logging or handling errors.
+### 🗺️ Router
 
-## `notFound`: NotFound Handler Middleware 🚨
+Exstack’s `Router` is a **powerful and flexible routing solution** that works both standalone or within Express.
 
-The `notFound` middleware manages **NotFoundError** errors, returning appropriate **json responses.**
-
-### Usage
+- **Smart Routing:** Automatically selects the best strategy (Trie or RegExp), similar to **Hono.js**.
+- **Express-like API:** Familiar methods — `.get()`, `.post()`, `.use()`, etc.
+- **Parameter Handling:** Easy access via `req.params` and `req.param()`.
+- **Middleware & Subrouters:** Modular and composable for scalable applications.
 
 ```typescript
-import {notFound} from 'exstack';
-// without path
-app.use(notFound());
-// With path
-app.use(notFound('*'));
+import {Router} from 'exstack';
+
+const router = new Router();
+
+router.get('/hello', () => 'Hello, World!');
+
+router.get('/users/:id', req => {
+  const {id} = req.params;
+  return {userId: id};
+});
+
+// Sub-router example
+const adminRouter = new Router();
+adminRouter.get('/dashboard', () => 'Admin Dashboard');
+router.route('/admin', adminRouter);
 ```
 
-## `handler`: Simplifying Controllers 🛠️
+### 🧮 Router Benchmarks
 
-Eliminates repetitive **`try-catch`** blocks by managing error handling for both async and sync functions. It also integrates seamlessly with **ApiRes** for enhanced response handling and provides a clean context-based API.
+| Test Case   | Express | Router | Improvement      |
+| ----------- | ------- | ------ | ---------------- |
+| Route Match | 11.24ms | 1.08ms | **10.4x faster** |
+| Middleware  | 28.43ms | 1.11ms | **25.6x faster** |
+| Params      | 15.88ms | 2.12ms | **7.5x faster**  |
+| Wildcard    | 15.12ms | 1.29ms | **11.7x faster** |
+| Async       | 15.14ms | 3.29ms | **4.6x faster**  |
 
-### Simplifying Route Handlers
+**Cold Start (10K routes):**
+
+- Express: 32.74 ms
+- Router: 6.20 ms
+
+**Memory Footprint (10K routes):**
+
+- Express: 14.67 MB
+- Router: 0.00 MB
+
+### 🪄 Handler
+
+The `handler` utility wraps route logic to **automatically catch errors** and **send responses** cleanly.
 
 ```typescript
 import {handler, ApiRes} from 'exstack';
 
-// Route without handler (traditional approach with try-catch)
-app.get('/user/:id', async ({req, res, next}) => {
+// Without handler (classic)
+app.get('/user/:id', async (req, res, next) => {
   try {
     const user = await getUserById(req.params.id);
     res.status(200).json(user);
-  } catch (error) {
-    next(error); // Pass the error to the error-handling middleware
+  } catch (err) {
+    next(err);
   }
 });
 
-// Route using handler (simplified with exstack)
+// With handler (cleaner)
 app.get(
   '/user/:id',
-  handler(async ({param}) => {
-    const user = await getUserById(param.id);
-    // Send success response using ApiRes
+  handler(async req => {
+    const user = await getUserById(req.param('id'));
     return ApiRes.ok(user, 'User fetched successfully');
   }),
 );
 ```
 
-### Advanced Example
+> 🧩 **Note:** The Exstack `Router` natively supports async/sync handlers — `handler()` is only needed when using **standalone Express routes**.
+
+### 📦 ApiRes
+
+`ApiRes` standardizes and simplifies success response formatting.
 
 ```typescript
-import {handler, ApiRes, type InputType} from 'exstack';
+router.get('/user', () => ApiRes.ok({name: 'John Doe'}, 'User found'));
 
-// Login type handler
-type LoginInput = InputType<{email: string; password: string}>;
+router.post('/user', req => {
+  const newUser = createUser(req.body);
+  return ApiRes.created(newUser, 'User created');
+});
 
-// Login request handler
-const login = handler<LoginInput>(async ({body, res}) => {
-  const {email, password} = body;
-  const user = await loginUser(email, password);
-
-  // Manually setting headers
-  res.setHeader('X-Custom-Header', 'SomeHeaderValue');
-
-  // Set multiple cookies for authentication
-  res.cookie('access-token', user.accessToken, {
-    httpOnly: true,
-    secure: true, // Set to true in production with HTTPS
-    maxAge: 3600000, // 1 hour
-  });
-
-  res.cookie('refresh-token', user.refreshToken, {
-    httpOnly: true,
-    secure: true,
-    maxAge: 7 * 24 * 3600000, // 1 week
-  });
-
-  // API response with token and user info
-  return ApiRes.ok(user, 'Logged in successfully');
+// Chainable example
+router.post('/user', req => {
+  const newUser = createUser(req.body);
+  return ApiRes.status(200).msg('User created').data(newUser);
 });
 ```
 
-### Minimal Examples
+**Available Methods:**
 
-```typescript
-// text response with 200 status
-app.get(
-  '/hello',
-  handler(() => 'Hello World'),
-);
-// object response with 200 status
-app.get(
-  '/welcome',
-  handler(() => ({message: 'Hello World!'})),
-);
-// without api-res
-app.post(
-  '/login',
-  handler(async ({param, res}) => {
-    const user = await getUserById(param.id);
-    // Manually setting headers
-    res.setHeader('X-Custom-Header', 'SomeHeaderValue');
-    // Setting cookies
-    res.cookie('access-token', user.accessToken, {
-      httpOnly: true,
-      secure: true, // Set to true in production with HTTPS
-      maxAge: 3600000, // 1 hour
-    });
-    // Sending a custom JSON response
-    return res.status(200).json({
-      status: 'success',
-      message: 'User fetched successfully',
-      data: user,
-    });
-  }),
-);
-```
+| Method                                  | Description                |
+| --------------------------------------- | -------------------------- |
+| `ApiRes.ok(data, message)`              | 200 OK response            |
+| `ApiRes.created(data, message)`         | 201 Created response       |
+| `ApiRes.paginated(data, meta, message)` | Paginated success response |
+| `.status(code)`                         | Chainable status setter    |
+| `.msg(message)`                         | Chainable message setter   |
+| `.data(data)`                           | Chainable data setter      |
 
-## Standardized JSON Responses with ApiRes 📊
+### 🚨 HttpError
 
-ApiRes provides a consistent structure for API responses. It includes several static methods that handle common response patterns, such as `ok`, `created`, and `paginated`.
-
-#### Usage:
-
-```typescript
-import {ApiRes, handler} from 'exstack';
-
-// Example without handler
-app.get('/hello', ({req, res}) => new ApiRes.ok({}, 'Hello World').toJson(res));
-
-// With ok (200)
-const get = handler(async ({param}) => ApiRes.ok(await getUser(param), 'Get user successfully'));
-
-// With created (201)
-const create = handler(async ({body}) => ApiRes.created(await createUser(body), 'User created successfully'));
-
-// With paginated (200)
-const list = handler(async ({query}) => {
-  const {data, meta} = await getUsers(query);
-  return ApiRes.paginated(data, meta, 'Get users list successfully');
-});
-
-// Routes
-app.route('/').get(list).post(create);
-app.route('/:id').get(get);
-```
-
-### ApiRes `Static` Methods
-
-- `ok(result, message)`: Returns a success response (HTTP 200).
-- `created(result, message)`: Returns a resource creation response (HTTP 201).
-- `paginated(data, meta, message)`: Returns a success response (HTTP 200).
-
-### `ApiRes.toJson(res: Response): void` Method
-
-Send `HTTP` json Response.
-
-```typescript
-new ApiRes({}, 'Hello World').toJson(res);
-```
-
-### `ApiRes.body: HttpResBody` Property
-
-Returns the Body `(JSON)` representation of the response.
-
-```typescript
-new ApiRes({}, 'Hello World').body;
-```
-
-## Zod Validator 🔍
-
-The Zod validator provides seamless request validation for Express.js routes using Zod schemas. It validates request body, query parameters, and URL parameters with automatic error handling.
-
-### Installation
-
-```bash
-npm install zod
-```
-
-### Usage
-
-```typescript
-import {validator} from 'exstack/zod';
-import {z} from 'zod';
-
-// Define schemas
-const userSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  age: z.number().min(18)
-});
-
-const paramsSchema = z.object({
-  id: z.string().uuid()
-});
-
-const querySchema = z.object({
-  page: z.string().transform(Number).optional(),
-  limit: z.string().transform(Number).optional()
-});
-
-// Use validators in routes
-app.post('/users', validator.body(userSchema), handler(({body}) => {
-  // body is now typed and validated
-  return ApiRes.created(body, 'User created');
-}));
-
-app.get('/users/:id', validator.params(paramsSchema), handler(({param}) => {
-  // param.id is validated as UUID
-  return ApiRes.ok({id: param.id}, 'User found');
-}));
-
-app.get('/users', validator.query(querySchema), handler(({query}) => {
-  // query parameters are validated and transformed
-  const {page = 1, limit = 10} = query;
-  return ApiRes.ok({page, limit}, 'Users list');
-}));
-```
-
-### Validator Methods
-
-- `validator.body(schema)`: Validates request body
-- `validator.params(schema)`: Validates URL parameters  
-- `validator.query(schema)`: Validates query string parameters
-
-### Error Handling
-
-Validation errors are automatically converted to HTTP 400 errors with detailed field-level error messages, seamlessly integrated with the `errorHandler` middleware.
-
-## HttpError ❌
-
-The HttpError class standardizes error handling by extending the native Error class. It's used to throw HTTP-related errors, which are the caught by **`errorHandler`** [middleware](#errorhandler-error-handler-middleware).
-
-#### Usage:
+The `HttpError` class provides a **consistent and structured way to handle HTTP errors**.
 
 ```typescript
 import {HttpError, HttpStatus} from 'exstack';
 
-// Example without handler
-app.get(
-  '*',
-  ({res}) => new HttpError(HttpStatus.NOT_FOUND, {message: 'Not Found'}).toJson(res!), // Throw a 404 error
+router.get('*', (req, res) =>
+  new HttpError(HttpStatus.NOT_FOUND, {
+    message: 'Not Found',
+  }).toJson(res),
 );
 
-// Example with handler
-app.post(
-  '/example/:id',
-  handler(({param}) => {
-    if (!param.id) throw new BadRequestError('Id is required');
-    // .....
-  }),
-);
+router.post('/example/:id', req => {
+  if (!req.param('id')) throw new BadRequestError('Id is required');
+});
 ```
 
-### Option `data` or `cause`.
+**Extended Options:**
 
 ```typescript
 const err = new HttpError(400, {
@@ -348,16 +211,16 @@ const err = new HttpError(400, {
     username: 'Username is required',
     password: 'Password is required',
   },
-  cause: new Error(...)
+  cause: new Error('Invalid input'),
 });
 ```
 
-> _Note: status code is provided, the **HttpError** class will automatically generate an appropriate error name based on that status code._
+> _If no custom name is provided, `HttpError` automatically assigns one based on the status code._
 
-### Common HTTP Errors:
+#### Common Errors:
 
 - `BadRequestError`
-- `UnAuthorizedError`
+- `UnauthorizedError`
 - `NotFoundError`
 - `ConflictError`
 - `ForbiddenError`
@@ -366,9 +229,9 @@ const err = new HttpError(400, {
 - `InternalServerError`
 - `ContentTooLargeError`
 
-### `isHttpError(value)` Static Method:
+#### `HttpError.isHttpError(value)`
 
-The `HttpError.isHttpError(value)` method determines if a specific value is an instance of the `HttpError` class.
+Check whether a value is an instance of `HttpError`.
 
 ```typescript
 // If it is an HttpError, send a JSON response with the error details
@@ -378,7 +241,7 @@ else
   next(err);
 ```
 
-### Custom ErrorHandler Middleware
+#### Custom Error Handler Example
 
 ```typescript
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
@@ -401,73 +264,33 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 };
 ```
 
-### `error.toJson(res: Response): void` Method
+### ✅ HttpStatus
 
-Send `HTTP` json Response.
-
-```typescript
-new HttpError('Hello World').toJson(res);
-```
-
-### `error.body: HttpErrorBody` Property
-
-Converts an `HttpError` instance into a structured JSON format.
-
-```typescript
-const body = new HttpError(400, {message: 'Hello World'}).body;
-```
-
-### `createHttpErrorClass` Function
-
-Utility function to create custom error class.
-
-```typescript
-import {createHttpErrorClass, HttpStatus} from 'exstack';
-
-/**
- * Represents a Bad Gateway HTTP error (502).
- * @extends {HttpError}
- */
-export const BadGatewayError = createHttpErrorClass(HttpStatus.BAD_GATEWAY);
-```
-
-## HttpStatus ✅
-
-The `HttpStatus` provides readable constants for standard HTTP status codes **(2xx, 3xx, 4xx, 5xx)** and **Names**, improving code clarity and consistency.
-
-#### Usage:
+`HttpStatus` provides readable constants for all standard HTTP status codes.
 
 ```typescript
 import {HttpStatus} from 'exstack';
 
 // Example: Basic usage in a route
-app.get('/status-example', ({req, res}) => {
+app.get('/status-example', (req, res) => {
   res.status(HttpStatus.OK).json({message: 'All good!'});
 });
 
 // Example: Custom error handling middleware
-app.use(({req, res}) => {
+app.use((req, res) => {
   res.status(HttpStatus.NOT_FOUND).json({
     error: 'Resource not found',
   });
 });
 
 // Example: Response with a 201 Created status
-app.post('/create', ({req, res}) => {
+app.post('/create', (req, res) => {
   const resource = createResource(req.body);
   res.status(HttpStatus.CREATED).json({
     message: 'Resource created successfully',
     data: resource,
   });
 });
-```
-
-### `HttpStatus.XXX_NAME` of HTTP Status Code Name
-
-The provides a simple lookup for the descriptive names of HTTP status codes.
-
-```typescript
-const statusName = HttpStatus.["200_NAME"]; // 'OK'
 ```
 
 ### Commonly Used HTTP Status Codes:
@@ -498,23 +321,113 @@ const statusName = HttpStatus.["200_NAME"]; // 'OK'
   - `HttpStatus.SERVICE_UNAVAILABLE`: 503 — Service unavailable.
   - and more ....
 
-## Conclusion 🏁
+### 🔍 Zod Validator
 
-`exstack` is a powerful tool designed to simplify and enhance Express.js applications by providing essential features out of the box. Whether you're building a simple API or a complex web application, exstack helps you maintain clean and manageable code.
+The `validator` middleware provides an easy way to validate incoming requests using Zod schemas. It can validate the request `body`, `query`, `params` and `all`.
 
-## Contributing 🤝
+### Installation
 
-Contributions are highly appreciated! To contribute:
+```bash
+# node runtime
+npm install zod
+# bun runtime
+bun install zod
+```
 
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Submit a pull request with a clear description of your changes.
+### Examples
 
-## Author 👤
+```typescript
+import * as z from 'zod';
+import {validator} from 'exstack/zod';
 
-- Created by **Aashish Panchal**.
-- GitHub: [@aashishpanchal](https://github.com/aashishpanchal)
+const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
 
-## License 📜
+router.post(
+  '/users',
+  validator.body(createUserSchema),
+  handler(req => {
+    const validatedBody = req.valid('body');
+    // validatedBody is guaranteed to match the schema
+    return ApiRes.created(validatedBody, 'User created');
+  }),
+);
+```
 
-[MIT © Aashish Panchal](LICENSE)
+```typescript
+router.post(
+  '/users',
+  validator.body(createUserSchema),
+  handler(req => {
+    // Option 1: Automatically inferred from schema
+    const user = req.valid('body');
+    //    ^? { name: string; email: string }
+
+    // Option 2: Explicitly infer from the schema
+    const user2 = req.valid<typeof createUserSchema>('body');
+    //    ^? z.infer<typeof createUserSchema>
+
+    // Option 3: Manually provide a type if needed
+    const user3 = req.valid<{name: string; email: string}>('body');
+    //    ^? { name: string; email: string }
+
+    return ApiRes.created(user, 'User created successfully');
+  }),
+);
+
+// Multi-part Validation Example
+
+const multiSchema = {
+  body: z.object({name: z.string()}),
+  query: z.object({page: z.string().optional()}),
+  params: z.object({id: z.string().uuid()}),
+};
+
+router.put(
+  '/users/:id',
+  validator.all(multiSchema),
+  handler(req => {
+    const result = req.valid('all');
+    return ApiRes.ok(result);
+  }),
+);
+```
+
+### 🧱 Middleware
+
+#### 🛠️ errorHandler
+
+Handles `HttpError` and unknown exceptions with standardized JSON output.
+
+```typescript
+import {errorHandler} from 'exstack';
+
+app.use(errorHandler(process.env.NODE_ENV === 'development'));
+```
+
+#### 🚫 notFound
+
+Automatically throws a 404 for unmatched routes.
+
+```typescript
+app.use(notFound('*splat'));
+```
+
+#### ⚙️ poweredBy
+
+Adds an `X-Powered-By` header to responses.
+
+```typescript
+app.use(poweredBy('Exstack'));
+```
+
+## 🤝 Contributing
+
+Contributions are welcome!
+Please open an issue or submit a pull request to help improve **Exstack**.
+
+## 📄 License
+
+Licensed under the [MIT License](./LICENSE).
