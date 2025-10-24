@@ -35,12 +35,20 @@
       "import": "./dist/zod.js",
       "types": "./dist/zod.d.ts",
       "require": "./dist/zod.cjs"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts",
+      "require": "./dist/types.cjs"
     }
   },
   "typesVersions": {
     "*": {
       "zod": [
         "./dist/zod.d.ts"
+      ],
+      "types": [
+        "./dist/types.d.ts"
       ]
     }
   },
