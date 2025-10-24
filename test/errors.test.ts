@@ -18,9 +18,7 @@ const mockResponse = () => ({
 });
 
 describe('HttpError', () => {
-  /**
-   * Test basic HttpError properties and body structure.
-   */
+  // Test basic HttpError properties and body structure.
   it('Should create an HttpError instance with correct properties', () => {
     const error = new HttpError(HttpStatus.BAD_REQUEST, {message: 'Invalid input'});
 
@@ -36,27 +34,21 @@ describe('HttpError', () => {
     });
   });
 
-  /**
-   * Should default to 500 InternalServerError if status is omitted.
-   */
+  // Should default to 500 InternalServerError if status is omitted.
   it('Should use default status 500 if no status is provided', () => {
     const error = new HttpError(undefined, {message: 'Server error'});
     expect(error.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(error.name).toBe('InternalServerError');
   });
 
-  /**
-   * Test type guard HttpError.isHttpError.
-   */
+  // Test type guard HttpError.isHttpError.
   it('Should correctly identify an HttpError instance', () => {
     const error = new HttpError(HttpStatus.BAD_REQUEST, {message: 'Test'});
     expect(HttpError.isHttpError(error)).toBe(true);
     expect(HttpError.isHttpError(new Error('Normal error'))).toBe(false);
   });
 
-  /**
-   * Test sending JSON via toJson().
-   */
+  // Test sending JSON via toJson().
   it('Should return a correct JSON response when toJson is called', () => {
     const res = mockResponse();
     const error = new BadRequestError('Invalid request');
@@ -65,9 +57,7 @@ describe('HttpError', () => {
     expect(res.json).toHaveBeenCalledWith(error.body);
   });
 
-  /**
-   * Test inclusion of data and cause in the error body.
-   */
+  // Test inclusion of data and cause in the error body.
   it('Should include cause and data in the error body if provided', () => {
     const data = {field: 'email', issue: 'Invalid format'};
     const cause = new Error('Underlying issue');

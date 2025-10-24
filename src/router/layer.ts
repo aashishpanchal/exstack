@@ -1,4 +1,4 @@
-import {handleResult} from '../../handler';
+import {handleResult} from '../handler';
 import type {RequestHandler} from 'express';
 
 export type Middleware = [[Function, unknown], unknown][] | [[Function]][];

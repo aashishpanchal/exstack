@@ -1,23 +1,31 @@
-import {match, emptyParam} from './match';
-import {Trie, PATH_ERROR, type ParamAssocArray} from './algo';
-import {METHOD_NAME_ALL, type ParamIndexMap, type Router} from '../../types';
+import {Trie, PATH_ERROR, type ParamAssocArray} from './node';
 import {MESSAGE_MATCHER_IS_ALREADY_BUILT, UnsupportedPathError} from '../errors';
+import {METHOD_NAME_ALL, type Result, type Router, type ParamIndexMap} from '../../types';
 import {buildWildcardRegExp, clearWildcardRegExpCache, checkOptionalParameter} from '../utils';
-import type {HandlerData, StaticMap, Matcher, MatcherMap} from './match';
+
+export type HandlerData<T> = [T, ParamIndexMap][];
+
+export type StaticMap<T> = Record<string, Result<T>>;
+
+export type Matcher<T> = [RegExp, HandlerData<T>[], StaticMap<T>];
+
+export type MatcherMap<T> = Record<string, Matcher<T> | null>;
 
 /** [handler, paramCount] used internally during route registration */
 type HandlerWithMeta<T> = [T, number];
 
 const nullMatcher: Matcher<any> = [/^$/, [], Object.create(null)];
 
+const emptyParam: string[] = [];
+
 /**
  * Utility function: find middleware handlers that match a given path.
  * Checks for longest matching wildcard pattern (e.g. `/api/*`).
  */
-function findMiddleware<T>(
+const findMiddleware = <T>(
   middleware: Record<string, HandlerWithMeta<T>[]> | undefined,
   path: string,
-): HandlerWithMeta<T>[] | undefined {
+): HandlerWithMeta<T>[] | undefined => {
   if (!middleware) return undefined;
 
   // Sort keys by descending length for priority (longer = more specific)
@@ -28,13 +36,13 @@ function findMiddleware<T>(
     }
   }
   return undefined;
-}
+};
 
 /**
  * Build matcher from preprocessed route data.
  * This is where trie-based RegExp generation happens.
  */
-function buildMatcherFromPreprocessedRoutes<T>(routes: [string, HandlerWithMeta<T>[]][]): Matcher<T> {
+const buildMatcherFromPreprocessedRoutes = <T>(routes: [string, HandlerWithMeta<T>[]][]): Matcher<T> => {
   const trie = new Trie();
   const handlerData: HandlerData<T>[] = [];
   if (routes.length === 0) {
@@ -97,13 +105,10 @@ function buildMatcherFromPreprocessedRoutes<T>(routes: [string, HandlerWithMeta<
   }
 
   return [regexp, handlerMap, staticMap] as Matcher<T>;
-}
+};
 
-/**
- * Main RegExpRouter implementation (Hono-like)
- */
 export class RegExpRouter<T> implements Router<T> {
-  name = 'RegExpRouter';
+  name: string = 'RegExpRouter';
   #middleware?: Record<string, Record<string, HandlerWithMeta<T>[]>>;
   #routes?: Record<string, Record<string, HandlerWithMeta<T>[]>>;
 
@@ -112,10 +117,7 @@ export class RegExpRouter<T> implements Router<T> {
     this.#routes = {[METHOD_NAME_ALL]: Object.create(null)};
   }
 
-  /**
-   * Add a new route or middleware handler.
-   */
-  add(method: string, path: string, handler: T): void {
+  add(method: string, path: string, handler: T) {
     const middleware = this.#middleware;
     const routes = this.#routes;
 
@@ -123,96 +125,112 @@ export class RegExpRouter<T> implements Router<T> {
       throw new Error(MESSAGE_MATCHER_IS_ALREADY_BUILT);
     }
 
-    // Ensure method buckets exist (inherit ALL handlers)
     if (!middleware[method]) {
-      [middleware, routes].forEach(map => {
-        map[method] = Object.create(null);
-        Object.keys(map.ALL).forEach(p => {
-          map[method][p] = [...map.ALL[p]];
+      [middleware, routes].forEach(handlerMap => {
+        handlerMap[method] = Object.create(null);
+        Object.keys(handlerMap[METHOD_NAME_ALL]).forEach(p => {
+          handlerMap[method][p] = [...handlerMap[METHOD_NAME_ALL][p]];
         });
       });
     }
 
-    if (path === '/*') path = '*';
+    if (path === '/*') {
+      path = '*';
+    }
 
     const paramCount = (path.match(/\/:/g) || []).length;
 
-    // Wildcard routes like /api/* or *
     if (/\*$/.test(path)) {
       const re = buildWildcardRegExp(path);
-
-      if (method === 'ALL') {
+      if (method === METHOD_NAME_ALL) {
         Object.keys(middleware).forEach(m => {
-          middleware[m][path] ||= findMiddleware(middleware[m], path) || findMiddleware(middleware.ALL, path) || [];
+          middleware[m][path] ||=
+            findMiddleware(middleware[m], path) || findMiddleware(middleware[METHOD_NAME_ALL], path) || [];
         });
       } else {
         middleware[method][path] ||=
-          findMiddleware(middleware[method], path) || findMiddleware(middleware.ALL, path) || [];
+          findMiddleware(middleware[method], path) || findMiddleware(middleware[METHOD_NAME_ALL], path) || [];
       }
-
-      // Attach handler to all matching paths
       Object.keys(middleware).forEach(m => {
-        if (method === 'ALL' || m === method) {
+        if (method === METHOD_NAME_ALL || method === m) {
           Object.keys(middleware[m]).forEach(p => {
-            if (re.test(p)) middleware[m][p].push([handler, paramCount]);
+            re.test(p) && middleware[m][p].push([handler, paramCount]);
           });
         }
       });
 
       Object.keys(routes).forEach(m => {
-        if (method === 'ALL' || m === method) {
-          Object.keys(routes[m]).forEach(p => {
-            if (re.test(p)) routes[m][p].push([handler, paramCount]);
-          });
+        if (method === METHOD_NAME_ALL || method === m) {
+          Object.keys(routes[m]).forEach(p => re.test(p) && routes[m][p].push([handler, paramCount]));
         }
       });
 
       return;
     }
 
-    // Optional parameters (expand into multiple paths)
     const paths = checkOptionalParameter(path) || [path];
+    for (let i = 0, len = paths.length; i < len; i++) {
+      const path = paths[i];
 
-    for (let i = 0; i < paths.length; i++) {
-      const currentPath = paths[i];
       Object.keys(routes).forEach(m => {
-        if (method === 'ALL' || m === method) {
-          routes[m][currentPath] ||= [
-            ...(findMiddleware(middleware[m], currentPath) || findMiddleware(middleware.ALL, currentPath) || []),
+        if (method === METHOD_NAME_ALL || method === m) {
+          routes[m][path] ||= [
+            ...(findMiddleware(middleware[m], path) || findMiddleware(middleware[METHOD_NAME_ALL], path) || []),
           ];
-          routes[m][currentPath].push([handler, paramCount - paths.length + i + 1]);
+          routes[m][path].push([handler, paramCount - len + i + 1]);
         }
       });
     }
   }
 
-  /**
-   * Lazily built match() method (defined in ./match.ts)
-   */
-  match: typeof match<Router<T>, T> = match;
+  match(method: string, path: string): Result<T> {
+    const matchers: MatcherMap<T> = this.#buildAllMatchers();
 
-  /**
-   * Build all matchers (called internally on first match()).
-   */
-  protected buildAllMatchers(): MatcherMap<T> {
+    const match = ((method, path) => {
+      const matcher = (matchers[method] || matchers[METHOD_NAME_ALL]) as Matcher<T>;
+
+      // Check for exact static match first
+      const staticMatch = matcher[2][path];
+      if (staticMatch) {
+        return staticMatch;
+      }
+
+      // Otherwise, use RegExp match
+      const m = path.match(matcher[0]);
+      if (!m) {
+        return [[], emptyParam];
+      }
+
+      const index = m.indexOf('', 1);
+      return [matcher[1][index], m];
+    }) as Router<T>['match'];
+
+    // Replace the method with the built version
+    this.match = match;
+    return match(method, path);
+  }
+
+  #buildAllMatchers(): MatcherMap<T> {
     const matchers: MatcherMap<T> = Object.create(null);
+
     Object.keys(this.#routes!)
       .concat(Object.keys(this.#middleware!))
       .forEach(method => {
-        matchers[method] ||= this.buildMatcher(method);
+        matchers[method] ||= this.#buildMatcher(method);
       });
+
     // Release cache
     this.#middleware = this.#routes = undefined;
     clearWildcardRegExpCache();
+
     return matchers;
   }
 
-  /**
-   * Build matcher for a specific HTTP method.
-   */
-  private buildMatcher(method: string): Matcher<T> | null {
+  #buildMatcher(method: string): Matcher<T> | null {
     const routes: [string, HandlerWithMeta<T>[]][] = [];
+
     let hasOwnRoute = method === METHOD_NAME_ALL;
+
     [this.#middleware!, this.#routes!].forEach(r => {
       const ownRoute = r[method] ? Object.keys(r[method]).map(path => [path, r[method][path]]) : [];
       if (ownRoute.length !== 0) {

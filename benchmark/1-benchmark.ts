@@ -60,7 +60,7 @@ function createExpressRouter() {
   );
 
   // Wildcard route
-  router.use('/wild/*', (req, res) => {
+  router.use('/wild/*splat', (req, res) => {
     res.send('wildcard');
   });
 

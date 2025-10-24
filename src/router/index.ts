@@ -1,10 +1,11 @@
 import {Param} from './param';
-import {TrieRouter} from './trie';
-import {SmartRouter} from './smart';
+import {compose} from './layer';
+import {mergePath} from './utils';
 import {HttpError} from '../helps';
-import {RegExpRouter} from './regexp';
+import {SmartRouter} from './smart';
+import {TrieRouter} from './trie-tree';
+import {RegExpRouter} from './reg-exp';
 import {handleResult} from '../handler';
-import {compose, mergePath} from './utils';
 import type {RequestHandler} from 'express';
 import type {Handler, RouterRoute} from '../types';
 import {METHODS, METHOD_NAME_ALL, METHOD_NAME_ALL_LOWERCASE} from '../types';
@@ -30,19 +31,10 @@ import {METHODS, METHOD_NAME_ALL, METHOD_NAME_ALL_LOWERCASE} from '../types';
  * ```
  */
 export class Router {
-  /** All registered routes within this router. */
   routes: RouterRoute[] = [];
-
-  /** Current base path for nested or mounted routers. */
   #basePath = '/';
-
-  /** Temporary path holder used during route registration. */
   #path = '/';
-
-  /** Internal smart matcher responsible for fast route lookups. */
   router: SmartRouter<[Handler, RouterRoute]>;
-
-  // --- Dynamic HTTP method shorthands (e.g., get, post, delete, etc.) ---
 
   /** Register a GET route. */
   get!: (path: string, ...handlers: Handler[]) => this;
@@ -76,7 +68,9 @@ export class Router {
       };
     });
     // --- dynamic router assignment ---
-    this.router = new SmartRouter({routers: [new RegExpRouter(), new TrieRouter()]});
+    this.router = new SmartRouter({
+      routers: [new RegExpRouter(), new TrieRouter()],
+    });
   }
 
   /**
