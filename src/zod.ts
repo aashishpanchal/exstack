@@ -154,12 +154,12 @@ declare module 'express-serve-static-core' {
     valid<T extends Target>(
       type: T,
     ): T extends 'body'
-      ? Body
+      ? Record<string, any>
       : T extends 'query'
-        ? Query
+        ? Record<string, any>
         : T extends 'all'
           ? {body: Body; query: Query; params: Params}
-          : Params;
+          : Record<string, any>;
     valid<T extends z.ZodType>(type: Target): z.Infer<T>;
     valid<T extends object>(type: Target): T;
   }
