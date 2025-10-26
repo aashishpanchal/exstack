@@ -25,11 +25,6 @@ type ValueOf<T> = T[keyof T];
 type NumberOf<K> = Extract<K, number>;
 
 /**
- * Represents any valid return type from a route handler.
- */
-export type RType = void | string | ApiRes | Record<string, any>;
-
-/**
  * Represents a standard Express-style route handler.
  *
  * @remarks
@@ -40,7 +35,7 @@ export type RType = void | string | ApiRes | Record<string, any>;
  *
  * The framework will automatically detect and send the result.
  */
-export type Handler = (req: Request, res: Response, next: NextFunction) => RType | Promise<RType>;
+export type Handler = (req: Request, res: Response, next: NextFunction) => any | Promise<any>;
 
 /**
  * Extracts numeric status codes from {@link HttpStatus}.

@@ -7,34 +7,24 @@ import {TrieRouter} from './trie-tree';
 import {RegExpRouter} from './reg-exp';
 import {handleResult} from '../handler';
 import type {RequestHandler} from 'express';
-import type {Handler, RouterRoute} from '../types';
+import type {Handler, RouterRoute, Router as IRouter} from '../types';
 import {METHODS, METHOD_NAME_ALL, METHOD_NAME_ALL_LOWERCASE} from '../types';
 
+type Target = 'trie' | 'regexp' | 'both';
+
 /**
- * A lightweight, Express-compatible router built on top of a RegExp/Trie based matcher.
+ * Lightweight, Express-compatible router built on top of a RegExp/Trie based matcher.
+ * Supports single or multiple route matchers (Trie, RegExp, or both).
  *
- * @remarks
- * This router mimics the Express API (`get`, `post`, `use`, etc.)
- * but internally uses a fast RegExp-based matcher for route lookups.
- * It can be used as standalone middleware or as a building block
- * for custom frameworks.
+ * Inspired by Hono (https://github.com/honojs/hono) for SmartRouter ideas
+ * like multi-router delegation and single-router optimization.
  *
- * @example
- * ```ts
- * const app = express();
- * const api = new Router();
- *
- * api.get('/ping', (req, res) => res.send('pong'));
- * api.post('/login', async (req, res) => ApiRes.ok({ token: 'abc123' }));
- *
- * app.use(api.dispatch);
- * ```
  */
 export class Router {
   routes: RouterRoute[] = [];
   #basePath = '/';
   #path = '/';
-  router: SmartRouter<[Handler, RouterRoute]>;
+  router: IRouter<[Handler, RouterRoute]>;
 
   /** Register a GET route. */
   get!: (path: string, ...handlers: Handler[]) => this;
@@ -53,24 +43,55 @@ export class Router {
   /** Register a route matching any HTTP method. */
   all!: (path: string, ...handlers: Handler[]) => this;
 
-  constructor() {
+  /**
+   * Creates a new Router instance.
+   *
+   * @param router - Determines internal matcher:
+   *   'trie'    → uses TrieRouter
+   *   'regexp'  → uses RegExpRouter
+   *   'both'    → uses SmartRouter (RegExp + Trie)
+   *   IRouter   → use provided router directly
+   *
+   * @example
+   * // Multi-router (default)
+   * import express from 'express';
+   * import {Router} from 'exstack';
+   *
+   * const app = express();
+   * const api = new Router(); // uses both Trie + RegExp internally
+   *
+   * api.get('/ping', (req, res) => res.send('pong'));
+   * api.post('/login', (req, res) => res.send({ token: 'abc123' }));
+   *
+   * app.use(api.dispatch);
+   */
+  constructor(router: Target = 'both') {
     // Dynamically assign route registration methods
     const allMethods = [...METHODS, METHOD_NAME_ALL_LOWERCASE];
     allMethods.forEach(method => {
       this[method] = (arg1: string | Handler, ...args: Handler[]) => {
-        if (typeof arg1 === 'string') {
-          this.#path = arg1;
-        } else {
-          this.#addRoute(method, this.#path, arg1);
-        }
-        args.forEach(handler => this.#addRoute(method, this.#path, handler));
+        const path = typeof arg1 === 'string' ? arg1 : this.#path;
+        if (typeof arg1 !== 'string') this.#addRoute(method, path, arg1);
+        args.forEach(handler => this.#addRoute(method, path, handler));
         return this as any;
       };
     });
     // --- dynamic router assignment ---
-    this.router = new SmartRouter({
-      routers: [new RegExpRouter(), new TrieRouter()],
-    });
+    switch (router) {
+      case 'trie':
+        this.router = new TrieRouter();
+        break;
+      case 'regexp':
+        this.router = new RegExpRouter();
+        break;
+      case 'both':
+        this.router = new SmartRouter({
+          routers: [new RegExpRouter(), new TrieRouter()],
+        });
+        break;
+      default:
+        throw new Error(`Router constructor expects 'trie', 'regexp', 'both'. Received: ${router}`);
+    }
   }
 
   /**
@@ -127,28 +148,58 @@ export class Router {
   /**
    * Mounts another `Router` instance at a given path prefix.
    *
-   * This allows modular route composition (similar to Express `.use('/api', router)`).
-   *
    * @param path - Path prefix at which to mount the sub-router.
    * @param router - Another Router instance to mount.
    * @returns This router instance.
    *
    * @example
-   * ```ts
-   * const api = new Router();
-   * api.get('/user', (req, res) => res.send('user'));
+   * // Example 1
+   * const r1 = new Router();
+   * const r2 = new Router();
    *
-   * const app = new Router();
+   * api.get('/user', (req, res) => res.send('user'));
    * app.route('/api', api); // Mounts as /api/user
-   * ```
+   *
+   * // Example 2
+   * const r1 = new Router('trie');
+   * const r2 = new Router('regexp');
+   *
+   * app.use('/r1', r1.dispatch); // Mounts as /r1
+   * app.use('/r2', r2.dispatch) // Mounts as /r2
+   *
+   * // Example 3
+   * const r1 = new Router('trie'); // regex
+   * const r2 = new Router('trie'); // regex
+   *
+   * r1.route('/r2', r2); // Mounts as /r2
+   *
+   * // Example 4
+   * const r1 = new Router();
+   * const r2 = new Router('trie');
+   * const r3 = new Router('regex');
+   *
+   * r1.route('/r2', r2); // Mounts as /r2
+   * r1.route('/r3', r3); // Mounts as /r3
+   *
    */
   route(path: string, router: Router): this {
     if (router === this) throw new Error('Cannot mount router onto itself');
     const base = mergePath(this.#basePath, path);
-    router.routes.map(r => {
-      this.#addRoute(r.method, mergePath(base, r.path), r.handler);
-    });
-
+    // If same router type or SmartRouter root → merge routes
+    if (
+      this.router.name === router.router.name || // same type (e.g., both RegExpRouter)
+      this.router.name === 'SmartRouter' // SmartRouter root → universal
+    ) {
+      // merge routes (Shadow Copy)
+      router.routes.forEach(r => {
+        this.#addRoute(r.method, mergePath(base, r.path), r.handler);
+      });
+    } else {
+      // Fallback → Throw Error
+      throw new Error(
+        `Cannot mount sub-router with different type (${router.router.name}) on root router (${this.router.name})!`,
+      );
+    }
     return this;
   }
 

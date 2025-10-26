@@ -80,29 +80,142 @@ app.listen(3000, () => console.log('Server running on port 3000'));
 
 ### 🗺️ Router
 
-Exstack’s `Router` is a **powerful and flexible routing solution** that works both standalone or within Express.
+Exstack’s `Router` is a **high-performance, flexible routing solution** for Express.js applications. It supports **Trie, RegExp, or hybrid (SmartRouter) routing strategies**, middleware, sub-routers, async-safe handlers, and lazy parameter parsing.
 
-- **Smart Routing:** Automatically selects the best strategy (Trie or RegExp), similar to **Hono.js**.
-- **Express-like API:** Familiar methods — `.get()`, `.post()`, `.use()`, etc.
-- **Parameter Handling:** Easy access via `req.params` and `req.param()`.
-- **Middleware & Subrouters:** Modular and composable for scalable applications.
+#### **Key Features**
 
-```typescript
+- **Smart Routing:** Automatically chooses the optimal routing strategy (`Trie`, `RegExp`, or `both`) for performance.
+- **Express-Like API:** Familiar methods — `.get()`, `.post()`, `.put()`, `.delete()`, `.patch()`, `.head()`, `.options()`, and `.all()`.
+- **Flexible Route Registration:** Supports multiple paths, multiple methods, and handler chaining via `.on()`.
+- **Middleware Support:** Works like `app.use()`. Path-specific or global middleware can be registered.
+- **Sub-router Mounting:** Modular design allows mounting other routers using `.route()`.
+- **Lazy Params Handling:** `req.params` and `req.param()` are automatically populated for matched routes.
+- **Async-Friendly Dispatch:** Handles async/sync route handlers safely with automatic error propagation.
+
+#### **Creating a Router**
+
+```ts
 import {Router} from 'exstack';
 
+// Default: SmartRouter (both Trie + RegExp)
+const api = new Router();
+
+// Single router strategies
+const trieRouter = new Router('trie'); // Only TrieRouter
+const regexRouter = new Router('regexp'); // Only RegExpRouter
+```
+
+#### **Route Registration**
+
+You can define routes using familiar methods:
+
+```ts
+api.get('/ping', (req, res) => res.send('pong'));
+api.post('/login', (req, res) => res.send({token: 'abc123'}));
+api.all('/health', (req, res) => res.send({status: 'ok'}));
+```
+
+Or register multiple methods/paths at once:
+
+```ts
+api.on(['get', 'post'], ['/user', '/account'], (req, res) => {
+  res.send({success: true});
+});
+```
+
+#### **Middleware (`use`)**
+
+Attach middleware globally or to a specific path:
+
+```ts
+// Global middleware
+api.use((req, res, next) => {
+  console.log('Request received:', req.path);
+  next();
+});
+
+// Path-specific middleware
+api.use('/admin', (req, res, next) => {
+  if (!req.user?.isAdmin) return res.status(403).send('Forbidden');
+  next();
+});
+```
+
+#### **Sub-router Mounting (`route`)**
+
+Mount other `Router` instances under a specific path:
+
+```ts
+const adminRouter = new Router();
+adminRouter.get('/dashboard', (req, res) => res.send('Admin Dashboard'));
+
+api.route('/admin', adminRouter); // Mounts as /admin/dashboard
+```
+
+> ⚠️ Routers must be compatible (`Trie`, `RegExp`, or `SmartRouter`). Mounting incompatible router types throws an error.
+
+#### **Parameter Handling**
+
+Route parameters are automatically available via:
+
+```ts
+api.get('/user/:id', req => {
+  const userId = req.param('id'); // Single param
+  const allParams = req.params; // Full params object
+  return {userId, allParams};
+});
+```
+
+Supports inheritance of params when routers are nested.
+
+#### **Dispatching Requests**
+
+Use `.dispatch` as an Express middleware:
+
+```ts
+import express from 'express';
+const app = express();
+
+app.use(api.dispatch);
+```
+
+- Matches requests using the selected routing strategy.
+- Automatically attaches `req.params` and `req.param()`.
+- Optimized for single handler or composed middleware chains.
+- Safely handles async and sync handlers with automatic response handling.
+
+#### **Example: Complete Router Usage**
+
+```ts
+import express from 'express';
+import {Router, ApiRes, validator, handler} from 'exstack';
+import * as z from 'zod';
+
+const app = express();
 const router = new Router();
 
-router.get('/hello', () => 'Hello, World!');
+app.use(express.json());
 
-router.get('/users/:id', req => {
-  const {id} = req.params;
-  return {userId: id};
-});
+const userSchema = z.object({name: z.string()});
+
+// Route with validation and response
+router.post(
+  '/users',
+  validator.body(userSchema),
+  handler(req => {
+    const user = req.valid('body');
+    return ApiRes.created(user, 'User created successfully');
+  }),
+);
 
 // Sub-router example
 const adminRouter = new Router();
-adminRouter.get('/dashboard', () => 'Admin Dashboard');
+adminRouter.get('/stats', () => ApiRes.ok({users: 100}, 'Stats'));
 router.route('/admin', adminRouter);
+
+app.use(router.dispatch);
+
+app.listen(3000, () => console.log('Server running on port 3000'));
 ```
 
 ### 🧮 Router Benchmarks
