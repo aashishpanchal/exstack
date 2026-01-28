@@ -19,8 +19,6 @@ const main = async () => {
     treeshake: true,
     unused: true,
   });
-  // Remove all .d.mts files
-  await rimraf(['./dist/**/*.d.mts', './dist/**/*.d.cts'], {glob: true});
   console.log('✅ Build completed successfully!');
 };
 
