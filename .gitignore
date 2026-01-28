@@ -131,7 +131,6 @@ dist
 
 ## Customs for this project
 build
-lib
 
 # General
 .DS_Store

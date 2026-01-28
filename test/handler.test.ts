@@ -1,7 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import {describe, expect, it, beforeEach} from 'vitest';
-import {handler, ApiRes, HttpError, errorHandler} from '../src';
+import {handler, ApiRes, HttpError, errorHandler} from '@/index';
 
 describe('handler', () => {
   let app: express.Express;

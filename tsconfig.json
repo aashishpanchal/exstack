@@ -2,7 +2,6 @@
   "compilerOptions": {
     "module": "esnext",
     "target": "esnext",
-    "moduleResolution": "node",
     "composite": false,
     "declaration": true,
     "strictNullChecks": true,
@@ -16,7 +15,11 @@
     "preserveWatchOutput": true,
     "skipLibCheck": true,
     "strict": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "test/**/*.test.ts", "build.ts"]
+  "include": ["src/**/*.ts", "test/**/*.test.ts", "build.ts", "bench/**/*.ts"]
 }

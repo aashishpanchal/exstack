@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import type {Request, NextFunction} from 'express';
-import {errorHandler, HttpError, HttpStatus} from '../src';
+import {errorHandler, HttpError, HttpStatus} from '@/index';
 
 /**
  * Mock Express response object for testing HTTP responses.
@@ -17,10 +17,17 @@ describe('ErrorHandler', () => {
    */
   it('Should correctly handle HttpError instances', () => {
     const res = mockResponse();
-    const err = new HttpError(HttpStatus.BAD_REQUEST, {message: 'Invalid request'});
+    const err = new HttpError(HttpStatus.BAD_REQUEST, {
+      message: 'Invalid request',
+    });
     const logger = vi.fn();
 
-    errorHandler(true, logger)(err, {} as Request, res as any, {} as NextFunction);
+    errorHandler(true, logger)(
+      err,
+      {} as Request,
+      res as any,
+      {} as NextFunction,
+    );
 
     expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(res.json).toHaveBeenCalledWith(err.body);
@@ -33,10 +40,18 @@ describe('ErrorHandler', () => {
   it('Should log the cause of an HttpError if provided', () => {
     const res = mockResponse();
     const cause = new Error('Database connection failed');
-    const err = new HttpError(HttpStatus.INTERNAL_SERVER_ERROR, {message: 'Server issue', cause});
+    const err = new HttpError(HttpStatus.INTERNAL_SERVER_ERROR, {
+      message: 'Server issue',
+      cause,
+    });
     const logger = vi.fn();
 
-    errorHandler(true, logger)(err, {} as Request, res as any, {} as NextFunction);
+    errorHandler(true, logger)(
+      err,
+      {} as Request,
+      res as any,
+      {} as NextFunction,
+    );
 
     expect(logger).toHaveBeenCalledWith(cause);
   });
@@ -51,7 +66,12 @@ describe('ErrorHandler', () => {
     const err = new Error('Unexpected failure');
     const logger = vi.fn();
 
-    errorHandler(true, logger)(err, {} as Request, res as any, {} as NextFunction);
+    errorHandler(true, logger)(
+      err,
+      {} as Request,
+      res as any,
+      {} as NextFunction,
+    );
 
     expect(logger).toHaveBeenCalledWith(err);
     expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);

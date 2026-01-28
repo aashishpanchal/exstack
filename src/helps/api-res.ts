@@ -1,23 +1,21 @@
-import {Response} from 'express';
-import {HttpStatus} from '../status';
-import type {HttpStatusCode, RedirectStatusCode, ClientErrorStatusCode, ServerErrorStatusCode} from '../types';
+import {HttpStatus} from '@/status';
+import type {Response} from 'express';
+import type {
+  HttpStatusCode,
+  RedirectStatusCode,
+  ClientErrorStatusCode,
+  ServerErrorStatusCode,
+} from '@/types';
 
-// Define the type for the status code of HTTP success response
-type Status = Exclude<HttpStatusCode, ClientErrorStatusCode | ServerErrorStatusCode | RedirectStatusCode>;
-
+type Status = Exclude<
+  HttpStatusCode,
+  ClientErrorStatusCode | ServerErrorStatusCode | RedirectStatusCode
+>;
 /** The structure of the HTTP response body. */
 export type HttpResBody = {result: any; status: number; message: string};
 
-/**
- * ApiRes class for standardizing API responses
- */
+/** ApiRes class for standardizing API responses. */
 export class ApiRes {
-  /**
-   * Creates an instance of ApiRes.
-   * @param {any} result - The result of the operation
-   * @param {Status} status - The HTTP status code
-   * @param {string} message - The response message
-   */
   constructor(
     private result: any = null,
     private status: Status = HttpStatus.OK,
@@ -58,22 +56,29 @@ export class ApiRes {
    * @example
    * new ApiRes('Hello World', 200).toJson(res);
    */
-  toJson = (res: Response): void => {
-    res.status(this.status).json(this.body);
+  toJson = (res?: Response): void => {
+    res?.status(this.status)?.json(this.body);
   };
 
   /** Clone self with a different status */
   static status = (code: Status) => new ApiRes(null, code);
 
   /** Creates an OK (200) response. */
-  static ok = (result: any, message: string = 'Request processed successfully'): ApiRes =>
-    new ApiRes(result, HttpStatus.OK, message);
+  static ok = (
+    result: any,
+    message: string = 'Request processed successfully',
+  ): ApiRes => new ApiRes(result, HttpStatus.OK, message);
 
   /** Creates a Created (201) response. */
-  static created = (result: any, message: string = 'Resource created successfully'): ApiRes =>
-    new ApiRes(result, HttpStatus.CREATED, message);
+  static created = (
+    result: any,
+    message: string = 'Resource created successfully',
+  ): ApiRes => new ApiRes(result, HttpStatus.CREATED, message);
 
   /** Creates a paginated OK (200) response. */
-  static paginated = (data: any, meta: object, message: string = 'Data retrieved successfully'): ApiRes =>
-    new ApiRes({...meta, data}, HttpStatus.OK, message);
+  static paginated = (
+    data: any,
+    meta: object,
+    message: string = 'Data retrieved successfully',
+  ): ApiRes => new ApiRes({...meta, data}, HttpStatus.OK, message);
 }

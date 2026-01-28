@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "baseUrl": "./",
-    "outDir": "dist",
-    "resolveJsonModule": false
-  },
-  "exclude": ["node_modules", "test", "dist", "vitest.config.ts", "build.ts", "benchmark"]
-}

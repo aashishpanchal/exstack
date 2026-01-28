@@ -1,5 +1,5 @@
-import {ApiRes} from './helps';
-import type {Handler} from './types';
+import {ApiRes} from './api-res';
+import type {Handler} from '@/types';
 import type {NextFunction, Request, Response} from 'express';
 
 /**
@@ -34,12 +34,15 @@ export const handleResult = (result: unknown, res: Response): void => {
  *   return new ApiRes(200, { user: username });
  * }));
  */
-export const handler = (callback: Handler) => async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = callback(req, res, next);
-    if (result instanceof Promise) result.then(value => handleResult(value, res)).catch(next);
-    else handleResult(result, res);
-  } catch (error) {
-    next(error);
-  }
-};
+export const handler =
+  (callback: Handler) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = callback(req, res, next);
+      if (result instanceof Promise)
+        result.then(value => handleResult(value, res)).catch(next);
+      else handleResult(result, res);
+    } catch (error) {
+      next(error);
+    }
+  };

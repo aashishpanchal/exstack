@@ -1,5 +1,5 @@
-import {HttpError} from '../helps';
-import {HttpStatus} from '../status';
+import {HttpStatus} from '@/status';
+import {HttpError} from '@/helps/errors';
 import {Router, type ErrorRequestHandler} from 'express';
 
 /**
@@ -20,7 +20,10 @@ import {Router, type ErrorRequestHandler} from 'express';
  * app.use(errorHandler(conf.isDev, logger.error));
  */
 export const errorHandler =
-  (isDev: boolean = true, logger: (error: unknown) => void = console.error): ErrorRequestHandler =>
+  (
+    isDev: boolean = true,
+    logger: (error: unknown) => void = console.error,
+  ): ErrorRequestHandler =>
   (err, _req, res, _next) => {
     // Handle known HttpError instances
     if (HttpError.isHttpError(err)) {
@@ -34,7 +37,9 @@ export const errorHandler =
     const unknown = {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       error: 'InternalServerError',
-      message: isDev ? err.message || 'Unexpected error' : 'Something went wrong',
+      message: isDev
+        ? err.message || 'Unexpected error'
+        : 'Something went wrong',
       stack: isDev ? err.stack : undefined,
     };
     res.status(unknown.status).json(unknown);

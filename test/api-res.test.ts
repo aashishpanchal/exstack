@@ -1,4 +1,4 @@
-import {ApiRes, HttpStatus} from '../src';
+import {ApiRes, HttpStatus} from '@/index';
 import {describe, expect, it, vi} from 'vitest';
 
 // Mock Express response object
@@ -45,7 +45,11 @@ describe('ApiRes', () => {
    * Validate the structure of the response body getter.
    */
   it('Should return the correct JSON body format', () => {
-    const response = new ApiRes('Sample Result', HttpStatus.OK, 'Sample message');
+    const response = new ApiRes(
+      'Sample Result',
+      HttpStatus.OK,
+      'Sample message',
+    );
 
     expect(response.body).toEqual({
       result: 'Sample Result',

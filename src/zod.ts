@@ -1,16 +1,9 @@
 import type * as z from 'zod';
-import {HttpError} from './helps';
+import {HttpError} from './helps/errors';
 import type {RequestHandler} from 'express';
 import {flattenError, prettifyError} from 'zod';
 
-/**
- * Possible request targets to validate.
- */
 type Target = 'body' | 'query' | 'params' | 'all';
-
-/**
- * Shape of schemas passed to `.all()`.
- */
 type Schema<T extends Target> = T extends 'all'
   ? {
       body?: z.ZodType;
@@ -19,18 +12,7 @@ type Schema<T extends Target> = T extends 'all'
     }
   : z.ZodType;
 
-/**
- * Express.js-compatible validator class.
- */
 class Validator {
-  /**
-   * Core validation logic used internally by all public methods.
-   * @template T - The part of the request to validate ('body' | 'query' | 'params' | 'all')
-   * @param {T} target - The target request part or 'all'
-   * @param {Schema<T>} schema - Zod schema(s) for validation
-   * @returns {RequestHandler} Express middleware
-   * @private
-   */
   #middleware =
     <T extends Target>(target: T, schema: Schema<T>): RequestHandler =>
     (req, _, next) => {
@@ -57,7 +39,9 @@ class Validator {
           }
         } else {
           // Validate a single section (body, query, or params)
-          const result = (schema as z.ZodType).safeParse((req as any)[target] || {});
+          const result = (schema as z.ZodType).safeParse(
+            (req as any)[target] || {},
+          );
           if (!result.success) {
             throw new HttpError(400, {
               code: 'VALIDATION_ERROR',
@@ -80,44 +64,18 @@ class Validator {
       }
     };
 
-  /**
-   * Validates the request body against a Zod schema.
-   * @param {ZodType} schema - Zod schema to validate `req.body`
-   * @returns {RequestHandler} Middleware that validates `req.body` and populates `req._validated.body`
-   */
-  body = (schema: z.ZodType): RequestHandler => this.#middleware('body', schema);
-
-  /**
-   * Validates the request query string against a Zod schema.
-   * @param {ZodType} schema - Zod schema to validate `req.query`
-   * @returns {RequestHandler} Middleware that validates `req.query` and populates `req._validated.query`
-   */
-  query = (schema: z.ZodType): RequestHandler => this.#middleware('query', schema);
-
-  /**
-   * Validates the request URL parameters against a Zod schema.
-   * @param {ZodType} schema - Zod schema to validate `req.params`
-   * @returns {RequestHandler} Middleware that validates `req.params` and populates `req._validated.params`
-   */
-  params = (schema: z.ZodType): RequestHandler => this.#middleware('params', schema);
-
-  /**
-   * Validates multiple parts of the request (body, query, params) simultaneously.
-   * @param {Schema<'all'>} schema - Object containing Zod schemas for each request part
-   * @returns {RequestHandler} Middleware that validates all provided request parts and populates `req._validated`
-   */
-  all = (schema: Schema<'all'>): RequestHandler => this.#middleware('all', schema);
+  all = (schema: Schema<'all'>): RequestHandler =>
+    this.#middleware('all', schema);
+  body = (schema: z.ZodType): RequestHandler =>
+    this.#middleware('body', schema);
+  query = (schema: z.ZodType): RequestHandler =>
+    this.#middleware('query', schema);
+  params = (schema: z.ZodType): RequestHandler =>
+    this.#middleware('params', schema);
 }
 
-/**
- * Provides middleware for validating request body, query, params, or all of them using Zod schemas.
- * Attaches a `req.valid()` helper to access validated data.
- */
 export const validator = new Validator();
 
-/**
- * Extends Express Request.
- */
 declare module 'express-serve-static-core' {
   interface Request {
     /**

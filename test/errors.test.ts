@@ -9,7 +9,7 @@ import {
   UnAuthorizedError,
   InternalServerError,
   ContentTooLargeError,
-} from '../src';
+} from '@/index';
 
 // Mock Express response
 const mockResponse = () => ({
@@ -20,7 +20,9 @@ const mockResponse = () => ({
 describe('HttpError', () => {
   // Test basic HttpError properties and body structure.
   it('Should create an HttpError instance with correct properties', () => {
-    const error = new HttpError(HttpStatus.BAD_REQUEST, {message: 'Invalid input'});
+    const error = new HttpError(HttpStatus.BAD_REQUEST, {
+      message: 'Invalid input',
+    });
 
     expect(error).toBeInstanceOf(HttpError);
     expect(error.status).toBe(HttpStatus.BAD_REQUEST);
@@ -78,11 +80,31 @@ describe('HttpError Sub-Classes', () => {
   const testCases = [
     {Class: ConflictError, status: HttpStatus.CONFLICT, name: 'ConflictError'},
     {Class: NotFoundError, status: HttpStatus.NOT_FOUND, name: 'NotFoundError'},
-    {Class: ForbiddenError, status: HttpStatus.FORBIDDEN, name: 'ForbiddenError'},
-    {Class: BadRequestError, status: HttpStatus.BAD_REQUEST, name: 'BadRequestError'},
-    {Class: UnAuthorizedError, status: HttpStatus.UNAUTHORIZED, name: 'UnauthorizedError'},
-    {Class: InternalServerError, status: HttpStatus.INTERNAL_SERVER_ERROR, name: 'InternalServerError'},
-    {Class: ContentTooLargeError, status: HttpStatus.PAYLOAD_TOO_LARGE, name: 'PayloadTooLargeError'},
+    {
+      Class: ForbiddenError,
+      status: HttpStatus.FORBIDDEN,
+      name: 'ForbiddenError',
+    },
+    {
+      Class: BadRequestError,
+      status: HttpStatus.BAD_REQUEST,
+      name: 'BadRequestError',
+    },
+    {
+      Class: UnAuthorizedError,
+      status: HttpStatus.UNAUTHORIZED,
+      name: 'UnauthorizedError',
+    },
+    {
+      Class: InternalServerError,
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      name: 'InternalServerError',
+    },
+    {
+      Class: ContentTooLargeError,
+      status: HttpStatus.PAYLOAD_TOO_LARGE,
+      name: 'PayloadTooLargeError',
+    },
   ];
 
   testCases.forEach(({Class, status, name}) => {

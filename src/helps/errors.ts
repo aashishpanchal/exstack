@@ -1,11 +1,9 @@
-import {HttpStatus} from '../status';
+import {HttpStatus} from '@/status';
 import type {Response} from 'express';
-import type {ClientErrorStatusCode, ServerErrorStatusCode} from '../types';
+import {STATUS_CODES} from 'node:http';
+import type {ClientErrorStatusCode, ServerErrorStatusCode} from '@/types';
 
-/** The type for the body message of HTTP errors. */
 type Message = string | string[];
-
-/** The structure of the HTTP error body. */
 export type HttpErrorBody = {
   data?: Record<string, unknown> | null;
   code?: string | null;
@@ -13,9 +11,10 @@ export type HttpErrorBody = {
   status: Status;
   message: Message;
 };
-
-// Define the type for the status code of HTTP errors
 type Status = ServerErrorStatusCode | ClientErrorStatusCode;
+
+const CLEAN_RE = /^\d+|[^a-zA-Z0-9 ]+/g;
+const nameCache = new Map<number, string>();
 
 /**
  * Get a human-readable error name from the HTTP status code.
@@ -24,16 +23,19 @@ type Status = ServerErrorStatusCode | ClientErrorStatusCode;
  */
 const getErrorName = (status: Status): string => {
   if (status < 400 || status > 511) return 'HttpError';
-  // Find the key corresponding to the given status code
-  const statusKey = HttpStatus[`${status}_NAME`];
-  // If the status code is not found, return a generic error name
-  if (!statusKey) return 'HttpError';
-  const name = statusKey
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase())
-    .replace(/\s+/g, '');
-  return name.endsWith('Error') ? name : name.concat('Error');
+  const rawName = STATUS_CODES[status];
+  if (!rawName) return 'HttpError';
+  // Remove apostrophes, punctuation, etc.
+  const cleaned = rawName.replace(CLEAN_RE, '');
+  // Split into words, capitalize each, join together
+  const camel = cleaned
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+  // Store name if not exist
+  const finalName = camel.endsWith('Error') ? camel : `${camel}Error`;
+  nameCache.set(status, finalName);
+  return finalName;
 };
 
 /**
@@ -52,7 +54,11 @@ export class HttpError extends Error {
       cause?: unknown;
     },
   ) {
-    super(typeof options.message === 'string' ? options.message : getErrorName(status));
+    super(
+      typeof options.message === 'string'
+        ? options.message
+        : getErrorName(status),
+    );
     this.name = getErrorName(status); // change name of error according to status code
     Error.captureStackTrace(this, this.constructor);
   }
@@ -67,7 +73,8 @@ export class HttpError extends Error {
    *   // Handle the HttpError
    * }
    */
-  static isHttpError = (value: unknown): value is HttpError => value instanceof HttpError;
+  static isHttpError = (value: unknown): value is HttpError =>
+    value instanceof HttpError;
 
   /**
    * Convert the HttpError instance to a Body object.
@@ -91,6 +98,7 @@ export class HttpError extends Error {
     res.status(this.status).json(this.body);
   };
 }
+
 /**
  * Utility function to create custom error classes.
  * @param status - HTTP status code.
@@ -146,10 +154,14 @@ export const UnAuthorizedError = createHttpErrorClass(HttpStatus.UNAUTHORIZED);
  * Represents an Internal Server Error HTTP error (500).
  * @extends {HttpError}
  */
-export const InternalServerError = createHttpErrorClass(HttpStatus.INTERNAL_SERVER_ERROR);
+export const InternalServerError = createHttpErrorClass(
+  HttpStatus.INTERNAL_SERVER_ERROR,
+);
 
 /**
  * Represents an Content Too Larger Error HTTP error (413).
  * @extends {HttpError}
  */
-export const ContentTooLargeError = createHttpErrorClass(HttpStatus.PAYLOAD_TOO_LARGE);
+export const ContentTooLargeError = createHttpErrorClass(
+  HttpStatus.PAYLOAD_TOO_LARGE,
+);

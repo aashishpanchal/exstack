@@ -1,7 +1,7 @@
 import * as z from 'zod';
+import {validator} from '@/zod';
+import {HttpError} from '@/index';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {validator} from '../src/zod';
-import {HttpError} from '../src';
 
 describe('Validator middleware', () => {
   const next = vi.fn();
