@@ -1,8 +1,8 @@
 import type {HttpStatus} from './status';
 import type {NextFunction, Request, Response} from 'express';
 
-export type ValueOf<T> = T[keyof T];
-export type NumberOf<K> = Extract<K, number>;
+type ValueOf<T> = T[keyof T];
+type NumberOf<K> = Extract<K, number>;
 
 // Define a type for HttpStatus that only includes number values
 export type HttpStatusCode = NumberOf<ValueOf<typeof HttpStatus>>;

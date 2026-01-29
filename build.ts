@@ -11,12 +11,12 @@ const main = async () => {
     clean: false,
     sourcemap: false,
     target: 'esnext',
-    entry: './src/**/*.ts',
+    entry: ['./src/index.ts', './src/zod.ts'],
     format: ['esm', 'cjs'],
     external: ['zod'],
     outDir: './dist',
-    unbundle: true,
-    treeshake: true,
+    // unbundle: true,
+    // treeshake: true,
     unused: true,
   });
   console.log('✅ Build completed successfully!');
