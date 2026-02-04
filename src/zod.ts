@@ -34,8 +34,8 @@ class Validator {
               });
             }
 
-            (req as any)._validated ??= {};
-            (req as any)._validated[key] = result.data;
+            (req as any)._valid ??= {};
+            (req as any)._valid[key] = result.data;
           }
         } else {
           // Validate a single section (body, query, or params)
@@ -51,12 +51,12 @@ class Validator {
             });
           }
 
-          (req as any)._validated ??= {};
-          (req as any)._validated[target] = result.data;
+          (req as any)._valid ??= {};
+          (req as any)._valid[target] = result.data;
         }
 
         // Attach req.valid() helper if not already present
-        req.valid = (t: Target) => (req as any)._validated?.[t] as any;
+        req.valid = (t: Target) => (req as any)._valid?.[t] as any;
 
         next();
       } catch (error) {

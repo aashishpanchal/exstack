@@ -21,7 +21,7 @@ describe('Validator middleware', () => {
 
       validator.body(schema)(req, {} as any, next);
 
-      expect(req._validated.body).toEqual({name: 'Alice', age: 25});
+      expect(req._valid.body).toEqual({name: 'Alice', age: 25});
       expect(req.valid('body')).toEqual({name: 'Alice', age: 25});
       expect(next).toHaveBeenCalledWith();
     });
@@ -44,7 +44,7 @@ describe('Validator middleware', () => {
 
       validator.query(schema)(req, {} as any, next);
 
-      expect(req._validated.query).toEqual({page: 2});
+      expect(req._valid.query).toEqual({page: 2});
       expect(req.valid('query')).toEqual({page: 2});
       expect(next).toHaveBeenCalledWith();
     });
@@ -57,7 +57,7 @@ describe('Validator middleware', () => {
 
       validator.params(schema)(req, {} as any, next);
 
-      expect(req._validated.params).toEqual({id: 'abc'});
+      expect(req._valid.params).toEqual({id: 'abc'});
       expect(req.valid('params')).toEqual({id: 'abc'});
       expect(next).toHaveBeenCalledWith();
     });
@@ -79,9 +79,9 @@ describe('Validator middleware', () => {
 
       validator.all(schema)(req, {} as any, next);
 
-      expect(req._validated.body).toEqual({name: 'Alice'});
-      expect(req._validated.query).toEqual({page: 1});
-      expect(req._validated.params).toEqual({id: 'abc'});
+      expect(req._valid.body).toEqual({name: 'Alice'});
+      expect(req._valid.query).toEqual({page: 1});
+      expect(req._valid.params).toEqual({id: 'abc'});
 
       expect(req.valid('body')).toEqual({name: 'Alice'});
       expect(req.valid('query')).toEqual({page: 1});
