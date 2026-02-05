@@ -11,7 +11,7 @@ const main = async () => {
     clean: false,
     sourcemap: false,
     target: 'esnext',
-    entry: ['./src/index.ts', './src/zod.ts'],
+    entry: ['./src/index.ts', './src/zod.ts', './src/serve.ts'],
     format: ['esm', 'cjs'],
     external: ['zod'],
     outDir: './dist',

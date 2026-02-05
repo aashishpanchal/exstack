@@ -18,6 +18,7 @@
   - [✅ HttpStatus](#-httpstatus)
   - [🔍 Zod Validator](#-zod-validator)
   - [🧱 Middleware](#-middleware)
+  - [🚀 Serve](#-serve)
 
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -29,6 +30,7 @@
 - ✅ **Zod-Based Validation** — Validate request body, query, and params seamlessly.
 - 🧱 **Essential Middleware** — Includes `errorHandler`, `notFound`, and `poweredBy` out of the box.
 - 🧾 **HttpStatus Enum** — Access standardized HTTP status codes and names with clear constants.
+- 🚀 **Graceful Shutdown** — Built-in server with graceful shutdown support for production deployments.
 
 ## 📦 Installation
 
@@ -43,6 +45,7 @@ import * as z from 'zod';
 import express from 'express';
 import {validator} from 'exstack/zod';
 import {handler, errorHandler, notFound, ApiRes} from 'exstack';
+import {serve} from 'exstack/serve';
 
 const app = express();
 
@@ -73,7 +76,8 @@ app.post(
 app.use(notFound('*splat'));
 app.use(errorHandler(process.env.NODE_ENV === 'development'));
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+// Start server with graceful shutdown
+serve(app, {port: 3000});
 ```
 
 ## 🧠 Core Concepts
@@ -388,6 +392,70 @@ Adds an `X-Powered-By` header to responses.
 ```typescript
 app.use(poweredBy('Exstack'));
 ```
+
+### 🚀 Serve
+
+Start your Express app or HTTP/HTTPS server with built-in graceful shutdown support.
+
+```typescript
+import express from 'express';
+import {serve} from 'exstack/serve';
+
+const app = express();
+// ... configure routes
+
+serve(app, {port: 3000});
+```
+
+**Features:**
+
+- ✅ Graceful shutdown on SIGINT/SIGTERM
+- ✅ Countdown timer with force close option
+- ✅ Support for HTTP, HTTPS, and HTTP2 servers
+- ✅ Auto-disabled in CI/TEST environments
+
+**Options:**
+
+```typescript
+serve(app, {
+  port: 3000, // Default: 3000 or PORT env
+  hostname: 'localhost', // Default: 'localhost' or HOST env
+  silent: false, // Suppress startup logs
+  gracefulShutdown: true, // Enable graceful shutdown
+  // or
+  gracefulShutdown: {
+    gracefulTimeout: 10, // Timeout in seconds (default: 5)
+  },
+});
+```
+
+**HTTPS Example:**
+
+```typescript
+import express from 'express';
+import https from 'node:https';
+import fs from 'node:fs';
+import {serve} from 'exstack/serve';
+
+const app = express();
+
+const httpsServer = https.createServer(
+  {
+    cert: fs.readFileSync('./cert.pem'),
+    key: fs.readFileSync('./key.pem'),
+  },
+  app,
+);
+
+serve(httpsServer, {port: 443});
+```
+
+**Graceful Shutdown Behavior:**
+
+- Press `Ctrl+C` → Server stops accepting new connections and waits for active requests
+- Shows countdown timer (default 5 seconds)
+- Press `Ctrl+C` again → Force close immediately
+- After timeout → Automatically force closes all connections
 
 ## 🤝 Contributing
 
