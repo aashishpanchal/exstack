@@ -11,13 +11,13 @@ type Options = {
   port?: number;
   /** Hostname (default: 'localhost' or HOST env) */
   hostname?: string;
-  /** Enable graceful shutdown (default: true, disabled in CI/TEST) */
-  gracefulShutdown?:
-    | boolean
-    | {
-        /** Timeout in seconds (default: 5 or SERVER_SHUTDOWN_TIMEOUT env) */
-        gracefulTimeout?: number;
-      };
+  /**
+   * Enable graceful shutdown (default: true, disabled in CI/TEST)
+   * - `true`: Enable with 5s timeout
+   * - `false` or `0` or negative: Disable
+   * - `number > 0`: Custom timeout in seconds
+   */
+  gracefulShutdown?: boolean | number;
   /** Suppress startup logs */
   silent?: boolean;
 };
@@ -41,11 +41,8 @@ type Application = Express | Http.Server | Https.Server;
  * const httpsServer = https.createServer({ cert, key }, app);
  * serve(httpsServer, { port: 443 });
  *
- * // Custom graceful shutdown timeout
- * serve(app, {
- *   port: 3000,
- *   gracefulShutdown: { gracefulTimeout: 10 }
- * });
+ * // Custom graceful shutdown timeout (10 seconds)
+ * serve(app, { port: 3000, gracefulShutdown: 10 });
  *
  * // Disable graceful shutdown
  * serve(app, { gracefulShutdown: false });
@@ -84,12 +81,17 @@ export function serve(app: Application, options: Options = {}) {
     socket.on('close', () => connections.delete(socket));
   });
 
-  // Setup graceful shutdown (disabled in CI/TEST)
-  if (gracefulConfig !== false && !process.env.CI && !process.env.TEST) {
+  // Setup graceful shutdown (disabled in CI/TEST or if <= 0)
+  if (
+    gracefulConfig !== false &&
+    !(typeof gracefulConfig === 'number' && gracefulConfig <= 0) &&
+    !process.env.CI &&
+    !process.env.TEST
+  ) {
     const gracefulTimeout =
-      gracefulConfig === true || !gracefulConfig?.gracefulTimeout
-        ? Number.parseInt(process.env.SERVER_SHUTDOWN_TIMEOUT || '') || 5
-        : gracefulConfig.gracefulTimeout;
+      typeof gracefulConfig === 'number'
+        ? gracefulConfig
+        : Number.parseInt(process.env.SERVER_SHUTDOWN_TIMEOUT || '') || 5;
 
     const closeServer = () =>
       new Promise<void>((resolve, reject) => {
