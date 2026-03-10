@@ -104,7 +104,6 @@
     "exstack",
     "handler",
     "utility",
-    "fast-router",
     "http-status",
     "http-errors",
     "async-handler"

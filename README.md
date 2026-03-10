@@ -418,16 +418,16 @@ serve(app, {port: 3000});
 
 ```typescript
 serve(app, {
-  port: 3000,                    // Default: 3000 or PORT env
-  hostname: 'localhost',         // Default: 'localhost' or HOST env
-  silent: false,                 // Suppress startup logs
-  gracefulShutdown: true,        // true | false | number (timeout in seconds)
+  port: 3000, // Default: 3000 or PORT env
+  host: 'localhost', // Default: 'localhost' or HOST env
+  silent: false, // Suppress startup logs
+  gracefulShutdown: true, // true | false | number (timeout in seconds)
 });
 
 // Examples:
-serve(app, { gracefulShutdown: 10 });    // 10 second timeout
-serve(app, { gracefulShutdown: 0 });     // Disable (same as false)
-serve(app, { gracefulShutdown: false }); // Disable
+serve(app, {gracefulShutdown: 10}); // 10 second timeout
+serve(app, {gracefulShutdown: 0}); // Disable (same as false)
+serve(app, {gracefulShutdown: false}); // Disable
 ```
 
 **HTTPS Example:**

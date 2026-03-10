@@ -13,10 +13,11 @@ const main = async () => {
     target: 'esnext',
     entry: ['./src/index.ts', './src/zod.ts', './src/serve.ts'],
     format: ['esm', 'cjs'],
-    external: ['zod'],
+    deps: {
+      neverBundle: ['zod'],
+      onlyAllowBundle: false,
+    },
     outDir: './dist',
-    // unbundle: true,
-    // treeshake: true,
     unused: true,
   });
   console.log('✅ Build completed successfully!');

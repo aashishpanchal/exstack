@@ -1,16 +1,13 @@
 import type Http from 'node:http';
 import type Https from 'node:https';
 import type {Express} from 'express';
-import type {Socket} from 'net';
+import type {Socket} from 'node:net';
 
-/**
- * Server configuration options
- */
 type Options = {
   /** Port (default: 3000 or PORT env) */
   port?: number;
   /** Hostname (default: 'localhost' or HOST env) */
-  hostname?: string;
+  host?: string;
   /**
    * Enable graceful shutdown (default: true, disabled in CI/TEST)
    * - `true`: Enable with 5s timeout
@@ -56,10 +53,10 @@ type Application = Express | Http.Server | Https.Server;
  * - After timeout: automatically force closes all connections
  * - Long-running connections (SSE, WebSocket) will be force closed on timeout
  */
-export function serve(app: Application, options: Options = {}) {
+export const serve = (app: Application, options: Options = {}) => {
   const port =
     options.port ?? (Number.parseInt(process.env.PORT || '') || 3000);
-  const hostname = options.hostname ?? process.env.HOST ?? 'localhost';
+  const hostname = options.host ?? process.env.HOST ?? 'localhost';
   const gracefulConfig = options.gracefulShutdown ?? true;
   const silent = options.silent ?? false;
 
@@ -149,4 +146,4 @@ export function serve(app: Application, options: Options = {}) {
   }
 
   return server;
-}
+};
