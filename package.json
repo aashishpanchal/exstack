@@ -57,10 +57,12 @@
   "typesVersions": {
     "*": {
       "serve": [
-        "./dist/serve.d.ts"
+        "./dist/serve.d.mts",
+        "./dist/serve.d.cts"
       ],
       "zod": [
-        "./dist/zod.d.ts"
+        "./dist/zod.d.mts",
+        "./dist/zod.d.cts"
       ]
     }
   },
