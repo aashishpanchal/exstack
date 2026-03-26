@@ -96,7 +96,7 @@ describe('serve', () => {
   it('should log startup message by default', async () => {
     const consoleSpy = vi.spyOn(console, 'log');
     const app = express();
-    server = serve(app, {port: 0, hostname: 'localhost'});
+    server = serve(app, {port: 0, host: 'localhost'});
 
     await new Promise(resolve => server.once('listening', resolve));
     expect(consoleSpy).toHaveBeenCalledWith(

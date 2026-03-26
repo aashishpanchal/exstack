@@ -61,6 +61,11 @@ export const errorHandler =
 export const notFound = (path: string): Router =>
   Router().all(path, (req, res) =>
     new HttpError(HttpStatus.NOT_FOUND, {
-      message: `Cannot ${req.originalUrl} on ${req.method.toUpperCase()}`,
+      message: 'Wrong Path',
+      code: 'NOT_FOUND',
+      meta: {
+        path: req.path,
+        method: req.method,
+      },
     }).toJson(res),
   );

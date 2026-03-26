@@ -177,7 +177,7 @@ app.post(
 ```typescript
 const err = new HttpError(400, {
   message: 'Validation Error',
-  data: {
+  meta: {
     username: 'Username is required',
     password: 'Password is required',
   },

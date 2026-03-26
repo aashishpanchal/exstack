@@ -28,7 +28,7 @@ class Validator {
             if (!result.success) {
               throw new HttpError(400, {
                 code: 'VALIDATION_ERROR',
-                data: flattenError(result.error),
+                meta: flattenError(result.error),
                 cause: prettifyError(result.error),
                 message: `Invalid data in req.${key}`,
               });
@@ -45,7 +45,7 @@ class Validator {
           if (!result.success) {
             throw new HttpError(400, {
               code: 'VALIDATION_ERROR',
-              data: flattenError(result.error),
+              meta: flattenError(result.error),
               cause: prettifyError(result.error),
               message: `Invalid data in req.${target}`,
             });

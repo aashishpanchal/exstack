@@ -29,7 +29,6 @@ describe('HttpError', () => {
     expect(error.name).toBe('BadRequestError');
     expect(error.message).toBe('Invalid input');
     expect(error.body).toMatchObject({
-      data: null,
       error: 'BadRequestError',
       status: HttpStatus.BAD_REQUEST,
       message: 'Invalid input',
@@ -63,11 +62,11 @@ describe('HttpError', () => {
   it('Should include cause and data in the error body if provided', () => {
     const data = {field: 'email', issue: 'Invalid format'};
     const cause = new Error('Underlying issue');
-    const error = new BadRequestError('Validation error', {data, cause});
+    const error = new BadRequestError('Validation error', {meta: data, cause});
 
     expect(error.options.cause).toBeInstanceOf(Error);
     expect(error.body).toMatchObject({
-      data: expect.objectContaining(data),
+      meta: expect.objectContaining(data),
       error: 'BadRequestError',
       status: HttpStatus.BAD_REQUEST,
       message: 'Validation error',

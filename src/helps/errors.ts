@@ -4,18 +4,17 @@ import {STATUS_CODES} from 'node:http';
 import type {ClientErrorStatusCode, ServerErrorStatusCode} from '@/types';
 
 type Message = string | string[];
+type Status = ServerErrorStatusCode | ClientErrorStatusCode;
 export type HttpErrorBody = {
-  data?: Record<string, unknown> | null;
-  code?: string | null;
-  error: string;
+  meta?: Record<string, unknown> | null;
   status: Status;
   message: Message;
+  code?: string | null;
+  error: string;
 };
-type Status = ServerErrorStatusCode | ClientErrorStatusCode;
 
 const CLEAN_RE = /^\d+|[^a-zA-Z0-9 ]+/g;
 const nameCache = new Map<number, string>();
-
 /**
  * Get a human-readable error name from the HTTP status code.
  * @param {number} status - The HTTP status code.
@@ -50,7 +49,7 @@ export class HttpError extends Error {
    */
   constructor(
     readonly status: Status = HttpStatus.INTERNAL_SERVER_ERROR,
-    readonly options: Pick<HttpErrorBody, 'message' | 'data' | 'code'> & {
+    readonly options: Pick<HttpErrorBody, 'message' | 'meta' | 'code'> & {
       cause?: unknown;
     },
   ) {
@@ -59,7 +58,7 @@ export class HttpError extends Error {
         ? options.message
         : getErrorName(status),
     );
-    this.name = getErrorName(status); // change name of error according to status code
+    this.name = getErrorName(status);
     Error.captureStackTrace(this, this.constructor);
   }
 
@@ -83,8 +82,8 @@ export class HttpError extends Error {
    */
   get body(): HttpErrorBody {
     const {name: error, status} = this;
-    const {message, data = null, code = null} = this.options;
-    return {status, error, message, data, code};
+    const {message, meta, code} = this.options;
+    return {status, error, message, code, meta};
   }
 
   /**
@@ -113,8 +112,8 @@ export const createHttpErrorClass = (status: Status) =>
       options: {
         cause?: unknown;
         code?: string | null;
-        data?: Record<string, unknown> | null;
-      } = {},
+        meta?: Record<string, unknown> | null;
+      } = Object.create(null),
     ) {
       super(status, {message, ...options});
     }
