@@ -12,8 +12,13 @@ import type {NextFunction, Request, Response} from 'express';
  * @param res - The Express response object.
  */
 export const handleResult = (result: unknown, res: Response): void => {
-  if (result instanceof ApiRes) result.toJson(res);
-  else if (result && result !== res) res.send(result);
+  if (result instanceof ApiRes) {
+    result.toJson(res);
+  } else if (typeof result === 'string') {
+    res.type('text/plain').send(result);
+  } else if (result && result !== res) {
+    res.send(result);
+  }
 };
 
 /**

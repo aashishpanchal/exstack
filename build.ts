@@ -15,7 +15,6 @@ const main = async () => {
     format: ['esm', 'cjs'],
     deps: {
       neverBundle: ['zod'],
-      onlyAllowBundle: false,
     },
     outDir: './dist',
     unused: true,
