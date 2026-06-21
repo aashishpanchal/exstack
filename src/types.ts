@@ -25,8 +25,8 @@ export type ServerErrorStatusCode =  500 | 501 | 502 | 503 | 504 | 505 | 506 | 5
  * Automatically derived by excluding all known 1xx, 2xx, 3xx, and 5xx codes.
  */
 export type ClientErrorStatusCode = Exclude<
-  HttpStatusCode,
-  SuccessStatusCode | RedirectStatusCode | ServerErrorStatusCode
+	HttpStatusCode,
+	SuccessStatusCode | RedirectStatusCode | ServerErrorStatusCode
 >;
 
 /**
@@ -41,7 +41,7 @@ export type ClientErrorStatusCode = Exclude<
  * The framework will automatically detect and send the result.
  */
 export type Handler = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
+	req: Request,
+	res: Response,
+	next: NextFunction,
 ) => unknown | Promise<unknown>;

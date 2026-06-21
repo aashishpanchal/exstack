@@ -4,19 +4,19 @@ import type {Express} from 'express';
 import type {Socket} from 'node:net';
 
 type Options = {
-  /** Port (default: 3000 or PORT env) */
-  port?: number;
-  /** Hostname (default: 'localhost' or HOST env) */
-  host?: string;
-  /**
-   * Enable graceful shutdown (default: true, disabled in CI/TEST)
-   * - `true`: Enable with 5s timeout
-   * - `false` or `0` or negative: Disable
-   * - `number > 0`: Custom timeout in seconds
-   */
-  gracefulShutdown?: boolean | number;
-  /** Suppress startup logs */
-  silent?: boolean;
+	/** Port (default: 3000 or PORT env) */
+	port?: number;
+	/** Hostname (default: 'localhost' or HOST env) */
+	host?: string;
+	/**
+	 * Enable graceful shutdown (default: true, disabled in CI/TEST)
+	 * - `true`: Enable with 5s timeout
+	 * - `false` or `0` or negative: Disable
+	 * - `number > 0`: Custom timeout in seconds
+	 */
+	gracefulShutdown?: boolean | number;
+	/** Suppress startup logs */
+	silent?: boolean;
 };
 
 type Application = Express | Http.Server | Https.Server;
@@ -54,96 +54,96 @@ type Application = Express | Http.Server | Https.Server;
  * - Long-running connections (SSE, WebSocket) will be force closed on timeout
  */
 export const serve = (app: Application, options: Options = {}) => {
-  const port =
-    options.port ?? (Number.parseInt(process.env.PORT || '') || 3000);
-  const hostname = options.host ?? process.env.HOST ?? 'localhost';
-  const gracefulConfig = options.gracefulShutdown ?? true;
-  const silent = options.silent ?? false;
+	const port =
+		options.port ?? (Number.parseInt(process.env.PORT || '') || 3000);
+	const hostname = options.host ?? process.env.HOST ?? 'localhost';
+	const gracefulConfig = options.gracefulShutdown ?? true;
+	const silent = options.silent ?? false;
 
-  // Track all open sockets for force close
-  const connections = new Set<Socket>();
-  let closeCalled = false;
-  let isShuttingDown = false;
+	// Track all open sockets for force close
+	const connections = new Set<Socket>();
+	let closeCalled = false;
+	let isShuttingDown = false;
 
-  const server: Http.Server = app.listen(port, hostname, () => {
-    if (!silent) {
-      const url = `http://${hostname}:${port}/`;
-      console.log(`\x1b[32m➜ Listening on:\x1b[0m \x1b[36m${url}\x1b[0m`);
-    }
-  });
+	const server: Http.Server = app.listen(port, hostname, () => {
+		if (!silent) {
+			const url = `http://${hostname}:${port}/`;
+			console.log(`\x1b[32m➜ Listening on:\x1b[0m \x1b[36m${url}\x1b[0m`);
+		}
+	});
 
-  // Track connections for cleanup
-  server.on('connection', socket => {
-    connections.add(socket);
-    socket.on('close', () => connections.delete(socket));
-  });
+	// Track connections for cleanup
+	server.on('connection', socket => {
+		connections.add(socket);
+		socket.on('close', () => connections.delete(socket));
+	});
 
-  // Setup graceful shutdown (disabled in CI/TEST or if <= 0)
-  if (
-    gracefulConfig !== false &&
-    !(typeof gracefulConfig === 'number' && gracefulConfig <= 0) &&
-    !process.env.CI &&
-    !process.env.TEST
-  ) {
-    const gracefulTimeout =
-      typeof gracefulConfig === 'number'
-        ? gracefulConfig
-        : Number.parseInt(process.env.SERVER_SHUTDOWN_TIMEOUT || '') || 5;
+	// Setup graceful shutdown (disabled in CI/TEST or if <= 0)
+	if (
+		gracefulConfig !== false &&
+		!(typeof gracefulConfig === 'number' && gracefulConfig <= 0) &&
+		!process.env.CI &&
+		!process.env.TEST
+	) {
+		const gracefulTimeout =
+			typeof gracefulConfig === 'number'
+				? gracefulConfig
+				: Number.parseInt(process.env.SERVER_SHUTDOWN_TIMEOUT || '') || 5;
 
-    const closeServer = () =>
-      new Promise<void>((resolve, reject) => {
-        if (closeCalled) return resolve();
-        closeCalled = true;
-        // Stop accepting new connections, wait for existing requests
-        server.close(err => (err ? reject(err) : resolve()));
-      });
+		const closeServer = () =>
+			new Promise<void>((resolve, reject) => {
+				if (closeCalled) return resolve();
+				closeCalled = true;
+				// Stop accepting new connections, wait for existing requests
+				server.close(err => (err ? reject(err) : resolve()));
+			});
 
-    const forceClose = async () => {
-      process.stderr.write(
-        '\x1b[31m\x1b[2K\rForcibly closing connections...\n\x1b[0m',
-      );
-      // Destroy all open sockets immediately
-      for (const socket of connections) {
-        socket.destroy();
-      }
-      await closeServer();
-      process.stderr.write('\x1b[33mServer closed.\n\x1b[0m');
-      process.exit(0);
-    };
+		const forceClose = async () => {
+			process.stderr.write(
+				'\x1b[31m\x1b[2K\rForcibly closing connections...\n\x1b[0m',
+			);
+			// Destroy all open sockets immediately
+			for (const socket of connections) {
+				socket.destroy();
+			}
+			await closeServer();
+			process.stderr.write('\x1b[33mServer closed.\n\x1b[0m');
+			process.exit(0);
+		};
 
-    const shutdown = async () => {
-      // Second Ctrl+C → force close
-      if (isShuttingDown) {
-        await forceClose();
-        return;
-      }
-      isShuttingDown = true;
-      const closePromise = closeServer();
-      // Countdown with 1s intervals
-      for (let remaining = gracefulTimeout; remaining > 0; remaining--) {
-        process.stderr.write(
-          `\x1b[90m\rStopping server gracefully (${remaining}s)... Press \x1b[1mCtrl+C\x1b[0m\x1b[90m again to force close.\x1b[0m`,
-        );
-        const closed = await Promise.race([
-          closePromise.then(() => true),
-          new Promise<false>(r => setTimeout(() => r(false), 1000)),
-        ]);
-        // All requests completed
-        if (closed) {
-          process.stderr.write(
-            '\x1b[2K\r\x1b[32mServer closed successfully.\n\x1b[0m',
-          );
-          process.exit(0);
-        }
-      }
-      // Timeout expired → force close
-      process.stderr.write('\x1b[2K\rGraceful shutdown timed out.\n');
-      await forceClose();
-    };
+		const shutdown = async () => {
+			// Second Ctrl+C → force close
+			if (isShuttingDown) {
+				await forceClose();
+				return;
+			}
+			isShuttingDown = true;
+			const closePromise = closeServer();
+			// Countdown with 1s intervals
+			for (let remaining = gracefulTimeout; remaining > 0; remaining--) {
+				process.stderr.write(
+					`\x1b[90m\rStopping server gracefully (${remaining}s)... Press \x1b[1mCtrl+C\x1b[0m\x1b[90m again to force close.\x1b[0m`,
+				);
+				const closed = await Promise.race([
+					closePromise.then(() => true),
+					new Promise<false>(r => setTimeout(() => r(false), 1000)),
+				]);
+				// All requests completed
+				if (closed) {
+					process.stderr.write(
+						'\x1b[2K\r\x1b[32mServer closed successfully.\n\x1b[0m',
+					);
+					process.exit(0);
+				}
+			}
+			// Timeout expired → force close
+			process.stderr.write('\x1b[2K\rGraceful shutdown timed out.\n');
+			await forceClose();
+		};
 
-    process.on('SIGINT', shutdown); // Ctrl+C
-    process.on('SIGTERM', shutdown); // Docker/PM2 stop
-  }
+		process.on('SIGINT', shutdown); // Ctrl+C
+		process.on('SIGTERM', shutdown); // Docker/PM2 stop
+	}
 
-  return server;
+	return server;
 };

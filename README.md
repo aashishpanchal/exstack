@@ -54,22 +54,22 @@ app.use(express.json());
 
 // Validation schema
 const schema = z.object({
-  name: z.string(),
+	name: z.string(),
 });
 
 // Define routes with handler
 app.get(
-  '/ping',
-  handler(() => 'pong'),
+	'/ping',
+	handler(() => 'pong'),
 );
 
 app.post(
-  '/users',
-  validator.body(schema),
-  handler(req => {
-    const user = req.valid<typeof schema>('body');
-    return ApiRes.created(user, 'User created successfully');
-  }),
+	'/users',
+	validator.body(schema),
+	handler(req => {
+		const user = req.valid<typeof schema>('body');
+		return ApiRes.created(user, 'User created successfully');
+	}),
 );
 
 // Error middleware
@@ -91,21 +91,21 @@ import {handler, ApiRes} from 'exstack';
 
 // Without handler (classic)
 app.get('/user/:id', async (req, res, next) => {
-  try {
-    const user = await getUserById(req.params.id);
-    res.status(200).json(user);
-  } catch (err) {
-    next(err);
-  }
+	try {
+		const user = await getUserById(req.params.id);
+		res.status(200).json(user);
+	} catch (err) {
+		next(err);
+	}
 });
 
 // With handler (cleaner)
 app.get(
-  '/user/:id',
-  handler(async req => {
-    const user = await getUserById(req.params.id);
-    return ApiRes.ok(user, 'User fetched successfully');
-  }),
+	'/user/:id',
+	handler(async req => {
+		const user = await getUserById(req.params.id);
+		return ApiRes.ok(user, 'User fetched successfully');
+	}),
 );
 ```
 
@@ -115,25 +115,25 @@ app.get(
 
 ```typescript
 app.get(
-  '/user',
-  handler(() => ApiRes.ok({name: 'John Doe'}, 'User found')),
+	'/user',
+	handler(() => ApiRes.ok({name: 'John Doe'}, 'User found')),
 );
 
 app.post(
-  '/user',
-  handler(req => {
-    const newUser = createUser(req.body);
-    return ApiRes.created(newUser, 'User created');
-  }),
+	'/user',
+	handler(req => {
+		const newUser = createUser(req.body);
+		return ApiRes.created(newUser, 'User created');
+	}),
 );
 
 // Chainable example
 app.post(
-  '/user',
-  handler(req => {
-    const newUser = createUser(req.body);
-    return ApiRes.status(200).msg('User created').data(newUser);
-  }),
+	'/user',
+	handler(req => {
+		const newUser = createUser(req.body);
+		return ApiRes.status(200).msg('User created').data(newUser);
+	}),
 );
 ```
 
@@ -156,19 +156,19 @@ The `HttpError` class provides a **consistent and structured way to handle HTTP 
 import {HttpError, HttpStatus} from 'exstack';
 
 app.get(
-  '*',
-  handler((req, res) =>
-    new HttpError(HttpStatus.NOT_FOUND, {
-      message: 'Not Found',
-    }).toJson(res),
-  ),
+	'*',
+	handler((req, res) =>
+		new HttpError(HttpStatus.NOT_FOUND, {
+			message: 'Not Found',
+		}).toJson(res),
+	),
 );
 
 app.post(
-  '/example/:id',
-  handler(req => {
-    if (!req.params.id) throw new BadRequestError('Id is required');
-  }),
+	'/example/:id',
+	handler(req => {
+		if (!req.params.id) throw new BadRequestError('Id is required');
+	}),
 );
 ```
 
@@ -176,12 +176,12 @@ app.post(
 
 ```typescript
 const err = new HttpError(400, {
-  message: 'Validation Error',
-  meta: {
-    username: 'Username is required',
-    password: 'Password is required',
-  },
-  cause: new Error('Invalid input'),
+	message: 'Validation Error',
+	meta: {
+		username: 'Username is required',
+		password: 'Password is required',
+	},
+	cause: new Error('Invalid input'),
 });
 ```
 
@@ -207,30 +207,30 @@ Check whether a value is an instance of `HttpError`.
 // If it is an HttpError, send a JSON response with the error details
 if (HttpError.isHttpError(err)) return err.toJson(res);
 else
-  // If it's not an HttpError, pass it to the next middleware for further handling
-  next(err);
+	// If it's not an HttpError, pass it to the next middleware for further handling
+	next(err);
 ```
 
 #### Custom Error Handler Example
 
 ```typescript
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-  // Handle known HttpError instances
-  if (HttpError.isHttpError(err)) {
-    // Log the cause if it exists
-    if (err.options.cause) console.error('HttpError Cause:', err.options.cause);
-    return err.toJson(res);
-  }
-  // Write unknown errors if a write function is provided
-  console.error('Unknown Error:', err);
-  // Standardized error response for unknown exceptions
-  const unknown = {
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    error: 'InternalServerError',
-    message: isDev ? err.message || 'Unexpected error' : 'Something went wrong',
-    stack: isDev ? err.stack : undefined,
-  };
-  res.status(unknown.status).json(unknown);
+	// Handle known HttpError instances
+	if (HttpError.isHttpError(err)) {
+		// Log the cause if it exists
+		if (err.options.cause) console.error('HttpError Cause:', err.options.cause);
+		return err.toJson(res);
+	}
+	// Write unknown errors if a write function is provided
+	console.error('Unknown Error:', err);
+	// Standardized error response for unknown exceptions
+	const unknown = {
+		status: HttpStatus.INTERNAL_SERVER_ERROR,
+		error: 'InternalServerError',
+		message: isDev ? err.message || 'Unexpected error' : 'Something went wrong',
+		stack: isDev ? err.stack : undefined,
+	};
+	res.status(unknown.status).json(unknown);
 };
 ```
 
@@ -243,23 +243,23 @@ import {HttpStatus} from 'exstack';
 
 // Example: Basic usage in a route
 app.get('/status-example', (req, res) => {
-  res.status(HttpStatus.OK).json({message: 'All good!'});
+	res.status(HttpStatus.OK).json({message: 'All good!'});
 });
 
 // Example: Custom error handling middleware
 app.use((req, res) => {
-  res.status(HttpStatus.NOT_FOUND).json({
-    error: 'Resource not found',
-  });
+	res.status(HttpStatus.NOT_FOUND).json({
+		error: 'Resource not found',
+	});
 });
 
 // Example: Response with a 201 Created status
 app.post('/create', (req, res) => {
-  const resource = createResource(req.body);
-  res.status(HttpStatus.CREATED).json({
-    message: 'Resource created successfully',
-    data: resource,
-  });
+	const resource = createResource(req.body);
+	res.status(HttpStatus.CREATED).json({
+		message: 'Resource created successfully',
+		data: resource,
+	});
 });
 ```
 
@@ -311,57 +311,57 @@ import * as z from 'zod';
 import {validator} from 'exstack/zod';
 
 const createUserSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+	email: z.string().email(),
+	password: z.string().min(6),
 });
 
 app.post(
-  '/users',
-  validator.body(createUserSchema),
-  handler(req => {
-    const body = req.valid('body');
-    // body is guaranteed to match the schema
-    return ApiRes.created(body, 'User created');
-  }),
+	'/users',
+	validator.body(createUserSchema),
+	handler(req => {
+		const body = req.valid('body');
+		// body is guaranteed to match the schema
+		return ApiRes.created(body, 'User created');
+	}),
 );
 ```
 
 ```typescript
 app.post(
-  '/users',
-  validator.body(createUserSchema),
-  handler(req => {
-    // Option 1: Automatically inferred from schema
-    const user = req.valid('body');
-    //    ^? { name: string; email: string }
+	'/users',
+	validator.body(createUserSchema),
+	handler(req => {
+		// Option 1: Automatically inferred from schema
+		const user = req.valid('body');
+		//    ^? { name: string; email: string }
 
-    // Option 2: Explicitly infer from schema
-    const user2 = req.valid<typeof createUserSchema>('body');
-    //    ^? z.infer<typeof createUserSchema>
+		// Option 2: Explicitly infer from schema
+		const user2 = req.valid<typeof createUserSchema>('body');
+		//    ^? z.infer<typeof createUserSchema>
 
-    // Option 3: Manually provide a type if needed
-    const user3 = req.valid<{name: string; email: string}>('body');
-    //    ^? { name: string; email: string }
+		// Option 3: Manually provide a type if needed
+		const user3 = req.valid<{name: string; email: string}>('body');
+		//    ^? { name: string; email: string }
 
-    return ApiRes.created(user, 'User created successfully');
-  }),
+		return ApiRes.created(user, 'User created successfully');
+	}),
 );
 
 // Multi-part Validation Example
 
 const multiSchema = {
-  body: z.object({name: z.string()}),
-  query: z.object({page: z.string().optional()}),
-  params: z.object({id: z.string().uuid()}),
+	body: z.object({name: z.string()}),
+	query: z.object({page: z.string().optional()}),
+	params: z.object({id: z.string().uuid()}),
 };
 
 app.put(
-  '/users/:id',
-  validator.all(multiSchema),
-  handler(req => {
-    const result = req.valid('all');
-    return ApiRes.ok(result);
-  }),
+	'/users/:id',
+	validator.all(multiSchema),
+	handler(req => {
+		const result = req.valid('all');
+		return ApiRes.ok(result);
+	}),
 );
 ```
 
@@ -418,10 +418,10 @@ serve(app, {port: 3000});
 
 ```typescript
 serve(app, {
-  port: 3000, // Default: 3000 or PORT env
-  host: 'localhost', // Default: 'localhost' or HOST env
-  silent: false, // Suppress startup logs
-  gracefulShutdown: true, // true | false | number (timeout in seconds)
+	port: 3000, // Default: 3000 or PORT env
+	host: 'localhost', // Default: 'localhost' or HOST env
+	silent: false, // Suppress startup logs
+	gracefulShutdown: true, // true | false | number (timeout in seconds)
 });
 
 // Examples:
@@ -441,11 +441,11 @@ import {serve} from 'exstack/serve';
 const app = express();
 
 const httpsServer = https.createServer(
-  {
-    cert: fs.readFileSync('./cert.pem'),
-    key: fs.readFileSync('./key.pem'),
-  },
-  app,
+	{
+		cert: fs.readFileSync('./cert.pem'),
+		key: fs.readFileSync('./key.pem'),
+	},
+	app,
 );
 
 serve(httpsServer, {port: 443});
